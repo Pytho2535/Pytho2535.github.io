@@ -1,0 +1,55 @@
+---
+import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
+
+const focus = ['web', 'social engineering', 'pentests', 'bug bounty', 'ctf'];
+---
+
+<Base title="About — Pytho">
+  <section class="page">
+    <div style="animation: rise 0.7s 0.05s both cubic-bezier(0.2,0.7,0.2,1);">
+      <span class="eyebrow">01 / about</span>
+      <h2 class="section-title">About me</h2>
+    </div>
+
+    <div
+      class="about-grid"
+      style="display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 40px; align-items: start; margin-top: 48px;"
+    >
+      <div style="animation: rise 0.75s 0.15s both cubic-bezier(0.2,0.7,0.2,1); display: flex; flex-direction: column; gap: 16px;">
+        <div style="position: relative; aspect-ratio: 4/5; border-radius: 22px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 60px rgba(0,0,0,0.45);">
+          <img
+            src={url('/images/about-portrait.png')}
+            alt="Pytho"
+            style="width: 100%; height: 100%; object-fit: cover; display: block;"
+          />
+        </div>
+      </div>
+
+      <div style="animation: rise 0.75s 0.22s both cubic-bezier(0.2,0.7,0.2,1); display: flex; flex-direction: column; gap: 22px;">
+        <p style="margin: 0; font-size: clamp(18px, 2.4vw, 22px); line-height: 1.55; color: rgba(236,236,238,0.9); font-weight: 500;">
+          I'm Pytho, a security researcher focused on offensive security and bug bounty hunting.
+        </p>
+        <p style="margin: 0; font-size: 16px; line-height: 1.7; color: rgba(236,236,238,0.62);">
+          I focus mainly in web and infrastructure pentests, but I'm also interested in physical
+          penetration tests. I often sit on HackTheBox, or read about Social Engineering.
+        </p>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;">
+          {focus.map((tag) => (
+            <span style="padding: 8px 14px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; letter-spacing: 0.02em; color: #ffb199; background: rgba(255,122,89,0.08); border: 1px solid rgba(255,122,89,0.2);">
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        <div style="margin-top: 12px; padding: 22px 24px; border-radius: 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(236,236,238,0.45);">currently</span>
+          <p style="margin: 10px 0 0; font-size: 15px; line-height: 1.6; color: rgba(236,236,238,0.8);">
+            Hunting on Intigriti&nbsp; ·&nbsp; Doing HackTheBox&nbsp; ·&nbsp; Writing up findings.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>

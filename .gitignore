@@ -1,0 +1,24 @@
+# build output
+dist/
+# generated types
+.astro/
+# dependencies
+node_modules/
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+README.md
+# environment variables
+.env
+.env.production
+# macOS / editor
+.DS_Store
+Thumbs.db
+
+# original design bundle — reference only, not part of the live site
+project/
+
+# local Claude Code tooling config
+.claude/

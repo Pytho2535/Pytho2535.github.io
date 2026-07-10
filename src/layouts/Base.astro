@@ -1,0 +1,56 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Pytho — Security Researcher',
+  description = 'Pytho — security researcher & bug bounty hunter. Writeups, profiles and proof of work.',
+} = Astro.props;
+
+const year = new Date().getFullYear();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2308070a'/><text x='50' y='72' font-size='70' font-family='monospace' font-weight='700' fill='%23ff7a59' text-anchor='middle'>P</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div style="position: relative; min-height: 100vh; overflow-x: hidden;">
+      <!-- ANIMATED BACKGROUND -->
+      <div class="bg-wrap">
+        <div class="orb1"></div>
+        <div class="orb2"></div>
+        <div class="orb3"></div>
+        <div class="grid"></div>
+        <div class="vignette"></div>
+      </div>
+
+      <Nav />
+
+      <main>
+        <slot />
+
+        <footer class="footer">
+          <span>© {year} Pytho</span>
+          <span>pytho13@proton.me</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>
