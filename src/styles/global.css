@@ -70,7 +70,9 @@ a:hover { color: #ffb199; }
   letter-spacing: 0.02em; color: #f4f4f6;
 }
 .nav-pills {
-  display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 999px;
+  display: flex; align-items: center; flex-wrap: wrap; justify-content: center;
+  gap: 4px; padding: 6px; border-radius: 22px;
+  max-width: 100%;
   background: rgba(20,18,24,0.5); border: 1px solid rgba(255,255,255,0.09);
   backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
   box-shadow: 0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.07);
@@ -111,9 +113,27 @@ main {
 
 /* ---- Responsive ---- */
 @media (max-width: 720px) {
-  .about-grid { grid-template-columns: 1fr !important; }
+  .about-grid { grid-template-columns: 1fr !important; gap: 28px !important; }
   .wall-grid { grid-template-columns: 1fr 1fr !important; }
   .cert-grid { grid-template-columns: 1fr 1fr !important; }
   .contact-grid { grid-template-columns: 1fr !important; }
   .contact-hero { grid-row: auto !important; }
+}
+
+/* Tablet / large phone: let the nav wrap and give content room to clear it. */
+@media (max-width: 640px) {
+  .nav { justify-content: center; gap: 10px; padding: 14px 12px; }
+  .nav-logo { padding: 8px 14px; }
+  .nav-pill { padding: 7px 12px; font-size: 13px; }
+  main { padding-top: 118px; }
+  .footer { justify-content: center; text-align: center; }
+}
+
+/* Small phones: single-column cards, tighter grids, no clipped content. */
+@media (max-width: 480px) {
+  main { padding: 108px 16px 64px; }
+  .wall-grid { grid-template-columns: 1fr !important; }
+  .cert-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .blog-row { flex-wrap: wrap; gap: 8px 14px !important; }
+  .blog-row .blog-tag { order: 3; }
 }

@@ -21,9 +21,6 @@ function isActive(href: string): boolean {
 ---
 
 <nav class="nav">
-  <a href={url('/')} class="nav-logo">
-    <span>Main Page</span>
-  </a>
   <div class="nav-pills">
     {items.map((item) => (
       <a href={url(item.href)} class:list={['nav-pill', { active: isActive(item.href) }]}>

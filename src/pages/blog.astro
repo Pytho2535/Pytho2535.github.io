@@ -31,6 +31,7 @@ const delays = ['0.12s', '0.2s', '0.28s', '0.36s', '0.44s'];
 
       {posts.map((post, i) => (
         <a
+          class="blog-row"
           href={url(`/blog/${post.id}`)}
           style={`animation: rise 0.7s both cubic-bezier(0.2,0.7,0.2,1); animation-delay: ${delays[i % delays.length]}; display: flex; align-items: center; gap: 24px; padding: 22px 26px; border-radius: 18px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);`}
         >
@@ -39,7 +40,7 @@ const delays = ['0.12s', '0.2s', '0.28s', '0.36s', '0.44s'];
             <div style="font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 500; color: rgba(236,236,238,0.85);">{post.data.title}</div>
             <div style="margin-top: 5px; font-size: 14px; color: rgba(236,236,238,0.5);">{post.data.excerpt}</div>
           </div>
-          <span style="padding: 5px 11px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #ffb199; background: rgba(255,122,89,0.1); border: 1px solid rgba(255,122,89,0.22);">{post.data.tag}</span>
+          <span class="blog-tag" style="padding: 5px 11px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #ffb199; background: rgba(255,122,89,0.1); border: 1px solid rgba(255,122,89,0.22); white-space: nowrap;">{post.data.tag}</span>
         </a>
       ))}
     </div>
