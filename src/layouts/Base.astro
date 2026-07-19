@@ -1,18 +1,26 @@
 ---
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
+import { url } from '../lib/url';
 
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = 'Pytho — Security Researcher',
   description = 'Pytho — security researcher & bug bounty hunter. Writeups, profiles and proof of work.',
+  image = '/images/banner.png',
 } = Astro.props;
 
 const year = new Date().getFullYear();
+
+// Absolute URLs for social-share (Open Graph / Twitter) link previews.
+const site = Astro.site ?? new URL('https://Pytho2535.github.io');
+const ogImage = new URL(url(image), site).href;
+const canonical = new URL(Astro.url.pathname, site).href;
 ---
 
 <!doctype html>
@@ -22,6 +30,25 @@ const year = new Date().getFullYear();
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph (Facebook, LinkedIn, Discord, iMessage, …) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Pytho" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="2400" />
+    <meta property="og:image:height" content="1260" />
+    <meta property="og:image:alt" content="Pytho — Security Researcher" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%2308070a'/><text x='50' y='72' font-size='70' font-family='monospace' font-weight='700' fill='%23ff7a59' text-anchor='middle'>P</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
