@@ -100,8 +100,6 @@ I converted this file to a hash:
 pwsafe2john Backup.psafe3 > hash
 ```
 
-![Converting the safe to a john hash with pwsafe2john](/images/administrator/7.png)
-
 And cracked it using `john`:
 
 ```bash
