@@ -15,6 +15,9 @@ draft: false
 | **Given creds** | `j.fleischman / J0elTHEM4n1990!` |
 | **Chain** | SMB write → CVE-2025-24071 → hash crack → `GenericAll` → shadow credentials → ADCS ESC16 |
 
+> Note:
+> Remember, I am showing here only the final good path on how to do this box, dont be discouraged if your's doesnt look like this, because mine didnt. There was a lot of googling, searching, learning and taking wrong turns in between.
+
 Note the credentials from the lab description: `j.fleischman / J0elTHEM4n1990!`
 
 First, nmap on the given IP:

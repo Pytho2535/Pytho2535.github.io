@@ -14,6 +14,9 @@ draft: false
 | **Given creds** | `Olivia / ichliebedich` |
 | **Chain** | `GenericAll` → `ForceChangePassword` → FTP backup → Password Safe crack → `GenericWrite` → Kerberoasting → DCSync |
 
+> Note:
+> Remember, I am showing here only the final good path on how to do this box, dont be discouraged if your's doesnt look like this, because mine didnt. There was a lot of googling, searching, learning and taking wrong turns in between.
+
 We start with credentials: `Olivia:ichliebedich`
 
 First, nmap on the given IP:
