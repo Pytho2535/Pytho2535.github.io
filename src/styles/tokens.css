@@ -10,6 +10,8 @@
    printed back.
    ============================================================ */
 
+@import './fonts.css';
+
 :root {
   /* --- ground and ink --- */
   --canvas: #0B0B0F;

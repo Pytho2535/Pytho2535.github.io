@@ -50,14 +50,11 @@ const canonical = new URL(Astro.url.pathname, site).href;
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230B0B0F'/><text x='50' y='72' font-size='68' font-family='monospace' font-weight='700' fill='%232BE39B' text-anchor='middle'>P</text></svg>" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- The mono the terminal is set in, and the sans a long writeup
-         is set in. Nothing else is loaded. -->
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <!-- The two faces are served from this site; see src/styles/fonts.css.
+         Preloaded here because the interface is monospaced from the first
+         pixel, and swapping it in late shifts every line. -->
+    <link rel="preload" href={url('/fonts/jetbrains-mono-400-latin.woff2')} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={url('/fonts/jetbrains-mono-700-latin.woff2')} as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <a class="skip" href="#main">skip to content</a>
