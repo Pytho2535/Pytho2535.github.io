@@ -79,6 +79,12 @@ a { color: var(--accent); text-decoration: none; }
    ============================================================ */
 
 .wrap {
+  /* width: 100% is load-bearing. body is a flex column, and an auto
+     margin across the flex axis cancels the stretch that would
+     otherwise give this box the width of the window: without a
+     definite width it collapses to fit its content, which drops the
+     page to a narrow strip. */
+  width: 100%;
   max-width: var(--column);
   margin: 0 auto;
   padding: 0 clamp(1rem, 3vw, 2.5rem);
