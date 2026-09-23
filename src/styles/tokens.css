@@ -1,0 +1,101 @@
+/* ============================================================
+   pytho — token layer.
+
+   The only file on the site that holds a colour literal or a font
+   family. Everything else names a token from here.
+
+   Palette: black terminal with a faint violet cast, dim grey text,
+   and one mint-green signal. Green marks what can be acted on: the
+   prompt, a section name, a link. Grey is everything the terminal
+   printed back.
+   ============================================================ */
+
+:root {
+  /* --- ground and ink --- */
+  --canvas: #0B0B0F;
+  --surface: #14131A;
+  --surface-2: #191821;
+  --rule: #1E1D26;
+  --rule-soft: #17161d;
+  /* One step up from the hairline, for an outline that has to be seen
+     rather than felt: the dashed slot of a certificate not yet held. */
+  --rule-strong: #2E2D38;
+  --code-bg: #08080C;
+  --overlay: rgba(5, 5, 8, 0.94);
+
+  --ink: #DBDADF;
+  --ink-muted: #8A8A93;
+  --ink-dim: #66666D;
+
+  /* --- colour --- */
+  --accent: #2BE39B;
+  --accent-deep: #11B97A;
+  --accent-quiet: #0F2A20;
+  --accent-glow: rgba(43, 227, 155, 0.35);
+
+  /* The chromatic split of the glitch. These two are drawn only by
+     the wordmark's two ghost layers and nowhere else on the site. */
+  --glitch-a: #1FD8FF;
+  --glitch-b: #FF3D9A;
+
+  /* --- type --- */
+  --face-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --face-text: 'Instrument Sans', system-ui, sans-serif;
+
+  --size-xs: 0.75rem;
+  --size-sm: 0.8125rem;
+  --size-base: 0.875rem;
+  --size-md: 0.9375rem;
+  --size-lg: 1.0625rem;
+  --size-xl: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+
+  --leading-tight: 1.2;
+  --leading-text: 1.6;
+  --leading-loose: 1.75;
+
+  --measure-prose: 74ch;
+  --measure-note: 60ch;
+
+  /* --- rhythm --- */
+  --space-tight: 0.75rem;
+  --space-step: 1.75rem;
+  --space-gap: 4.5rem;
+  --column: 74rem;
+
+  --radius: 6px;
+  --radius-sm: 3px;
+
+  /* --- focus --- */
+  --focus-ring: #2BE39B;
+
+  /* --- motion --- */
+  --duration: 140ms;
+  --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+html { background: var(--canvas); color-scheme: dark; }
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink-muted);
+  font-family: var(--face-mono);
+  font-size: var(--size-base);
+  line-height: var(--leading-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* The wordmark is the only thing on the site that moves on its own,
+   and it stops here for anyone who has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

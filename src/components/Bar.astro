@@ -1,0 +1,34 @@
+---
+import { url } from '../lib/url';
+
+/* The prompt line at the top of every page. The bracketed links are
+   the whole navigation: three sections, all visible, no menu to open. */
+
+const items = [
+  { label: 'writeups', href: '/blog' },
+  { label: 'wall-of-fame', href: '/wall' },
+  { label: 'contact', href: '/contact' },
+];
+
+const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
+
+function isCurrent(href: string): boolean {
+  const target = base + href;
+  return path === target || path.startsWith(target + '/');
+}
+---
+
+<header class="bar">
+  <a class="bar-mark" href={url('/')}><span class="sigil">$</span>pytho</a>
+
+  <nav class="bar-nav" aria-label="Sections">
+    {items.map((item) => (
+      <a
+        class="bar-link"
+        href={url(item.href)}
+        aria-current={isCurrent(item.href) ? 'page' : undefined}
+      >{item.label}</a>
+    ))}
+  </nav>
+</header>

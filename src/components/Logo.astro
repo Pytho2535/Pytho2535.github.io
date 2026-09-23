@@ -1,0 +1,16 @@
+---
+import art from '../assets/logo.txt?raw';
+
+/* The wordmark, as characters rather than as an image, so it stays
+   sharp at any size and can be selected and copied.
+
+   The glitch is CSS only: the same string is repeated by the two
+   pseudo-elements through data-text, and global.css clips them into
+   bands a few times a cycle. Screen readers get the word once. */
+
+const wordmark = art.replace(/\s+$/, '');
+---
+
+<div class="logo-wrap">
+  <pre class="logo" data-text={wordmark} role="img" aria-label="pytho">{wordmark}</pre>
+</div>

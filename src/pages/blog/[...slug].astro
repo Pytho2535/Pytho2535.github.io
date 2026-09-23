@@ -15,29 +15,26 @@ export const getStaticPaths: GetStaticPaths = async () => {
 const { post } = Astro.props;
 const { Content } = await render(post);
 
-const fmt = (d: Date) =>
-  d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
 <Base title={`${post.data.title} — Pytho`} description={post.data.excerpt}>
-  <article class="page" style="max-width: 760px; margin: 0 auto;">
-    <a href={url('/blog')} class="eyebrow" style="display: inline-block;">← back to blog</a>
-
-    <header style="margin-top: 20px; animation: rise 0.7s 0.05s both cubic-bezier(0.2,0.7,0.2,1);">
-      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: rgba(236,236,238,0.4);">{fmt(post.data.date)}</span>
-        <span style="padding: 5px 11px; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #ffb199; background: rgba(255,122,89,0.1); border: 1px solid rgba(255,122,89,0.22);">{post.data.tag}</span>
+  <article class="section">
+    <header class="post-head">
+      <div class="post-meta">
+        <time datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
+        <span class="row-tag">{post.data.tag}</span>
       </div>
-      <h1 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: clamp(32px, 5.5vw, 52px); line-height: 1.05; letter-spacing: -0.02em; color: #f4f4f6;">
-        {post.data.title}
-      </h1>
-      <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.5; color: rgba(236,236,238,0.6);">{post.data.excerpt}</p>
+      <h1 class="post-title">{post.data.title}</h1>
+      <p class="post-lede">{post.data.excerpt}</p>
     </header>
 
-    <div class="prose" style="margin-top: 40px; animation: rise 0.7s 0.15s both cubic-bezier(0.2,0.7,0.2,1);">
+    <div class="prose">
       <Content />
     </div>
   </article>
+
+  <a class="row-more" href={url('/blog')}>&#8592; back to writeups</a>
 
   {/*
     Click any image in a post to open it here. Wide terminal screenshots shrink a
@@ -58,8 +55,8 @@ const fmt = (d: Date) =>
   const closeBtn = box.querySelector('.lightbox-close') as HTMLButtonElement;
   let lastFocused: HTMLElement | null = null;
 
-  // `main` sets `z-index: 10`, which traps anything inside it below the nav's
-  // stacking order. Reparent to <body> so the overlay covers the whole page.
+  // The bar is sticky and the article sits inside the page column, so the
+  // overlay is reparented to <body> to be sure it covers both.
   document.body.appendChild(box);
 
   // Only offer the 1:1 view when the fitted image is actually smaller than the
@@ -93,8 +90,17 @@ const fmt = (d: Date) =>
 
   boxImg.addEventListener('load', refreshZoomAffordance);
 
+  // Every screenshot is reachable by keyboard as well as by pointer.
   document.querySelectorAll<HTMLImageElement>('.prose img').forEach((img) => {
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
     img.addEventListener('click', () => open(img));
+    img.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open(img);
+      }
+    });
   });
 
   // On the image: toggle 1:1 if there is detail to gain, otherwise just close.
@@ -121,80 +127,174 @@ const fmt = (d: Date) =>
 </script>
 
 <style is:global>
-  .prose { font-size: 16.5px; line-height: 1.75; color: rgba(236,236,238,0.82); }
+  /* ---- the writeup itself ------------------------------------- */
+
+  .post-head { margin-top: var(--space-step); }
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-tight);
+    font-size: var(--size-xs);
+    color: var(--ink-dim);
+  }
+  .post-title {
+    margin: var(--space-tight) 0 0;
+    font-family: var(--face-mono);
+    font-size: var(--size-xl);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    color: var(--ink);
+  }
+  .post-title::before { content: "# "; color: var(--accent); }
+  .post-lede {
+    margin: var(--space-tight) 0 0;
+    max-width: var(--measure-note);
+    font-family: var(--face-text);
+    font-size: var(--size-lg);
+    line-height: var(--leading-text);
+    color: var(--ink-muted);
+  }
+
+  /* The interface is monospaced; a writeup that runs to several hundred
+     lines is not. The sans starts here and stops at the end of the post. */
+  .prose {
+    margin-top: var(--space-step);
+    max-width: var(--measure-prose);
+    font-family: var(--face-text);
+    font-size: var(--size-lg);
+    line-height: var(--leading-loose);
+    color: var(--ink-muted);
+  }
   .prose > * + * { margin-top: 1.1em; }
-  .prose h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.01em; color: #f4f4f6; margin-top: 1.8em; }
-  .prose h3 { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 20px; color: #f4f4f6; margin-top: 1.5em; }
-  .prose a { color: #ff8f70; text-decoration: underline; text-underline-offset: 3px; }
-  .prose a:hover { color: #ffb199; }
-  .prose strong { color: #f4f4f6; }
+  .prose > pre, .prose > table, .prose > p:has(> img) { max-width: min(100%, 76rem); }
+
+  .prose h2, .prose h3 {
+    font-family: var(--face-mono);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    color: var(--ink);
+  }
+  .prose h2 { margin-top: 2.2em; font-size: var(--size-lg); }
+  .prose h3 { margin-top: 1.8em; font-size: var(--size-md); }
+  /* The heading level is printed the way the Markdown source spells it. */
+  .prose h2::before { content: "## "; color: var(--accent-deep); }
+  .prose h3::before { content: "### "; color: var(--accent-deep); }
+
+  .prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
   .prose ul, .prose ol { padding-left: 1.4em; }
   .prose li + li { margin-top: 0.4em; }
+  .prose li::marker { color: var(--accent-deep); }
+
   .prose blockquote {
-    margin: 0; padding: 4px 20px; border-left: 3px solid rgba(255,122,89,0.5);
-    color: rgba(236,236,238,0.65); font-style: italic;
+    margin: 0;
+    padding: 0.2em 1.2em;
+    border-left: 2px solid var(--accent-deep);
+    color: var(--ink-dim);
   }
+
   .prose code {
-    font-family: 'JetBrains Mono', monospace; font-size: 0.86em;
-    background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 6px;
+    font-family: var(--face-mono);
+    font-size: 0.85em;
+    color: var(--accent);
+    background: var(--surface);
+    padding: 0.1em 0.4em;
+    border-radius: var(--radius-sm);
   }
   .prose pre {
-    background: rgba(0,0,0,0.4) !important; border: 1px solid rgba(255,255,255,0.08);
-    padding: 18px; border-radius: 12px; overflow-x: auto; font-size: 13.5px; line-height: 1.6;
+    padding: 1rem;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--code-bg);
+    overflow-x: auto;
+    font-family: var(--face-mono);
+    font-size: var(--size-sm);
+    line-height: 1.55;
+    color: var(--ink-muted);
   }
-  .prose pre code { background: transparent; padding: 0; font-size: inherit; }
-  .prose img { max-width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); cursor: zoom-in; }
+  .prose pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
 
-  /* Full-size image viewer, opened by clicking a post image. */
-  .lightbox {
-    position: fixed; inset: 0; z-index: 200;
-    display: flex; align-items: center; justify-content: center;
-    padding: 32px;
-    background: rgba(10, 7, 12, 0.9);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    animation: lightbox-in 0.18s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  .prose img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    cursor: zoom-in;
   }
-  .lightbox[hidden] { display: none; }
-  /* Fills the overlay's content box so the image's `max-height: 100%` has a
-     definite height to resolve against. */
-  .lightbox-scroll {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
+
+  .prose hr { border: none; border-top: 1px dashed var(--rule); margin: 2em 0; }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--face-mono);
+    font-size: var(--size-sm);
   }
-  .lightbox-img {
-    max-width: 100%; max-height: 100%; object-fit: contain;
-    border-radius: 12px; border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 24px 70px rgba(0,0,0,0.6);
-    cursor: zoom-out;
+  .prose th, .prose td {
+    border: 1px solid var(--rule);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
   }
-  /* Fitted view that still has detail to reveal: clicking goes to 1:1. */
-  .lightbox.can-zoom .lightbox-img { cursor: zoom-in; }
-  /* 1:1 view: the inner wrapper scrolls, so the overlay and its close button
-     stay pinned to the viewport while panning. */
-  .lightbox.is-zoomed { padding: 0; }
-  .lightbox.is-zoomed .lightbox-scroll { display: block; overflow: auto; }
-  .lightbox.is-zoomed .lightbox-img {
-    max-width: none; max-height: none;
-    border-radius: 0; border: none; box-shadow: none;
-    cursor: zoom-out;
-  }
-  .lightbox-close {
-    position: absolute; z-index: 1; top: 18px; right: 20px;
-    width: 40px; height: 40px; padding: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Space Grotesk', sans-serif; font-size: 26px; line-height: 1;
-    color: rgba(236,236,238,0.7); background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.12); border-radius: 999px;
-    cursor: pointer; transition: color 0.2s, background 0.2s, border-color 0.2s;
-  }
-  .lightbox-close:hover { color: #ffb199; background: rgba(255,122,89,0.12); border-color: rgba(255,122,89,0.3); }
-  @keyframes lightbox-in { from { opacity: 0; } to { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .lightbox { animation: none; } }
-  @media (max-width: 640px) { .lightbox { padding: 16px; } .lightbox-close { top: 10px; right: 12px; } }
-  .prose hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 2em 0; }
-  .prose table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .prose th, .prose td { border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; text-align: left; }
-  /* Headerless key/value tables still emit an empty <thead> row in Markdown —
+  .prose th { color: var(--ink-dim); font-weight: 500; }
+  /* Headerless key/value tables still emit an empty <thead> row in Markdown;
      collapse it instead of rendering a blank band above the first row. */
   .prose thead th:empty { padding: 0; border: none; }
+
+  /* ---- full-size screenshot viewer ---- */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--overlay);
+  }
+  .lightbox[hidden] { display: none; }
+  .lightbox-scroll {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .lightbox-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid var(--rule);
+    cursor: zoom-out;
+  }
+  .lightbox.can-zoom .lightbox-img { cursor: zoom-in; }
+  .lightbox.is-zoomed { padding: 0; }
+  .lightbox.is-zoomed .lightbox-scroll { display: block; overflow: auto; }
+  .lightbox.is-zoomed .lightbox-img { max-width: none; max-height: none; border: none; }
+  .lightbox-close {
+    position: absolute;
+    z-index: 1;
+    top: 1rem;
+    right: 1rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--face-mono);
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--ink-muted);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .lightbox-close:hover { color: var(--accent); border-color: var(--accent-deep); }
+
+  @media (max-width: 46rem) {
+    .lightbox { padding: 0.75rem; }
+    .lightbox-close { top: 0.5rem; right: 0.5rem; }
+  }
 </style>
