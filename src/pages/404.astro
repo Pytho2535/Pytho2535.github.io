@@ -1,18 +1,27 @@
 ---
 import Base from '../layouts/Base.astro';
+import { url } from '../lib/url';
 
 /* The error state. GitHub Pages serves this file for any address that
-   is not a page. One line, and the bar above it is the way out. */
+   is not a page, so it is the one screen a stranger can land on by
+   accident. It says what happened and nothing else: the bar above it
+   is already the way out. */
 ---
 
 <Base
   title="404 — Pytho"
   description="That address is not on this site."
 >
-  <section class="section nf">
-    <h1 class="nf-note">
+  <section class="section nf" aria-labelledby="nf-head">
+    <h2 class="head" id="nf-head">404</h2>
+    <div class="rule"></div>
+
+    <p class="nf-line">no such file or directory</p>
+    <p class="nf-note">
       Nothing is published at that address. Either it never was, or the file
       behind it was renamed
-    </h1>
+    </p>
+
+    <a class="row-more" href={url('/')}>&#8592; back to the front page</a>
   </section>
 </Base>
