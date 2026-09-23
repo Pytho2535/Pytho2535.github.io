@@ -7,6 +7,9 @@ interface Props {
   title?: string;
   description?: string;
   image?: string;
+  /* The landing page is one screen: its content is centred in whatever
+     is left of the window between the bar and the footer. */
+  cover?: boolean;
 }
 
 const {
@@ -14,6 +17,7 @@ const {
   description =
     'Pytho — security researcher and bug bounty hunter. Hack The Box writeups, profiles and contact.',
   image = '/images/banner.png',
+  cover = false,
 } = Astro.props;
 
 // Absolute URLs for social-share (Open Graph / Twitter) link previews.
@@ -62,7 +66,7 @@ const canonical = new URL(Astro.url.pathname, site).href;
     <Bar />
 
     <div class="wrap">
-      <main id="main" tabindex="-1">
+      <main id="main" tabindex="-1" class={cover ? 'is-cover' : undefined}>
         <slot />
       </main>
 

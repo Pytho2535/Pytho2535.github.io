@@ -1,20 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { url } from '../lib/url';
-
-const profiles = [
-  { name: 'HackTheBox', handle: '@Pytho', href: 'https://app.hackthebox.com/users/1710921' },
-  { name: 'Intigriti', handle: '@pytho1', href: 'https://app.intigriti.com/profile/pytho1' },
-  { name: 'HackerOne', handle: '@pytho1', href: 'https://hackerone.com/pytho1?type=user' },
-];
-
-/* Held certificates carry their scan; the ones being worked towards
-   are an empty slot that says so, so the two can never be read as the
-   same thing. */
-const certs = [
-  { label: 'CompTIA Security+', src: '/images/cert-secplus.webp', status: 'held' },
-  { label: 'HTB CPTS', src: null, status: 'in progress' },
-];
+import { profiles, certs } from '../lib/site';
 ---
 
 <Base title="Wall of Fame — Pytho" description="Platform profiles and certificates.">

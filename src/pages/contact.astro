@@ -1,15 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-
-const email = 'pytho13@proton.me';
-
-const handles = [
-  { kind: 'github', handle: 'Pytho2535', href: 'https://github.com/Pytho2535' },
-  { kind: 'x / twitter', handle: '@Pytho_01', href: 'https://x.com/Pytho_01' },
-  { kind: 'intigriti', handle: '@pytho1', href: 'https://app.intigriti.com/profile/pytho1' },
-  { kind: 'hackerone', handle: '@pytho1', href: 'https://hackerone.com/pytho1?type=user' },
-  { kind: 'hackthebox', handle: '@Pytho', href: 'https://app.hackthebox.com/users/1710921' },
-];
+import { email, handles } from '../lib/site';
 
 const pgp = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
