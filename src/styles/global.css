@@ -275,13 +275,6 @@ main > .section:first-child { margin-top: clamp(2rem, 5vw, 3.25rem); }
   line-height: var(--leading-text);
   color: var(--ink-muted);
 }
-/* What is behind the name, counted off the thing itself at build time. */
-.card-count {
-  margin: 1.25rem 0 0;
-  font-size: var(--size-xs);
-  letter-spacing: 0.1em;
-  color: var(--ink-dim);
-}
 
 /* ============================================================
    ROWS — a listing: date, name, one line, tag.

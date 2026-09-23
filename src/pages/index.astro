@@ -2,35 +2,25 @@
 import Base from '../layouts/Base.astro';
 import Logo from '../components/Logo.astro';
 import { url } from '../lib/url';
-import { profiles, heldCerts, handles } from '../lib/site';
-import { getCollection } from 'astro:content';
 
 /* The landing page is the wordmark and the three ways into the site.
-   Nothing else: the writeups have their own index one click away.
-
-   The count under each name is read off the thing it counts, so it
-   cannot claim more writeups than exist. */
-
-const posts = (await getCollection('writeups', ({ data }) => !data.draft));
+   Nothing else: the writeups have their own index one click away. */
 
 const sections = [
   {
     name: '~/writeups',
     href: '/blog',
     note: 'Hack The Box machine writeups',
-    count: `${posts.length} entries`,
   },
   {
     name: '~/wall-of-fame',
     href: '/wall',
     note: 'Certificates and achievements',
-    count: `${profiles.length} platforms · ${heldCerts.length} certificate`,
   },
   {
     name: '~/contact',
     href: '/contact',
     note: 'Everything you need to reach out to me',
-    count: `mail · pgp · ${handles.length} handles`,
   },
 ];
 ---
@@ -49,7 +39,6 @@ const sections = [
           <span class="card-arrow" aria-hidden="true">&#8594;</span>
           <h3 class="card-name">{s.name}</h3>
           <p class="card-note">{s.note}</p>
-          <p class="card-count">{s.count}</p>
         </a>
       ))}
     </div>
