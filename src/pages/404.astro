@@ -1,24 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
 import { url } from '../lib/url';
-import { getCollection } from 'astro:content';
 
 /* The error state. GitHub Pages serves this file for any address that
    is not a page, so it is the one screen a stranger can land on by
-   accident: it says what happened and lists the way out. */
-
-const posts = (await getCollection('writeups', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
-);
-
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+   accident. It says what happened and nothing else: the bar above it
+   is already the way out. */
 ---
 
 <Base
   title="404 — Pytho"
   description="That address is not on this site."
 >
-  <section class="section" aria-labelledby="nf-head">
+  <section class="section nf" aria-labelledby="nf-head">
     <h2 class="head" id="nf-head">404</h2>
     <div class="rule"></div>
 
@@ -28,24 +22,6 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       behind it was renamed: a writeup's URL is its filename, so renaming one
       moves it.
     </p>
-  </section>
-
-  <section class="section" aria-labelledby="nf-writeups">
-    <h2 class="head" id="nf-writeups">writeups</h2>
-    <div class="rule"></div>
-
-    <div class="rows">
-      {posts.map((post) => (
-        <a class="row" href={url(`/blog/${post.id}`)}>
-          <time class="row-date" datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
-          <span class="row-body">
-            <span class="row-name">{post.data.title}</span>
-            <span class="row-note">{post.data.excerpt}</span>
-          </span>
-          <span class="row-tag">{post.data.tag}</span>
-        </a>
-      ))}
-    </div>
 
     <a class="row-more" href={url('/')}>&#8592; back to the front page</a>
   </section>

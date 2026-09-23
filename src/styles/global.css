@@ -293,7 +293,6 @@ a.row:hover .row-name { color: var(--accent); }
   font-size: var(--size-sm);
   color: var(--accent);
 }
-.row-more::before { content: "$ "; color: var(--accent); }
 .row-more:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ============================================================
@@ -314,7 +313,9 @@ a.row:hover .row-name { color: var(--accent); }
 .rec dd a { text-decoration: none; }
 .rec dd a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* ---- the 404 ---- */
+/* ---- the 404: one short screen, held clear of the fold ---- */
+
+.nf { min-height: 48vh; }
 
 .nf-line {
   margin: 0;
