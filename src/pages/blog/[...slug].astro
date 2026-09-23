@@ -13,7 +13,12 @@ export const getStaticPaths: GetStaticPaths = async () => {
 };
 
 const { post } = Astro.props;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
+
+/* The contents list is built from the headings the writeup actually
+   has. A post with one heading or none gets no list, because a list
+   of one is a label and a list of none is an empty box. */
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
@@ -29,8 +34,25 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       <p class="post-lede">{post.data.excerpt}</p>
     </header>
 
-    <div class="prose">
-      <Content />
+    <div class="post-layout">
+      {toc.length > 1 && (
+        <details class="toc" open>
+          <summary class="toc-open">contents</summary>
+          <nav aria-label="Sections of this writeup">
+            <ol class="toc-list">
+              {toc.map((h) => (
+                <li class={`toc-item toc-d${h.depth}`}>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </details>
+      )}
+
+      <div class="prose">
+        <Content />
+      </div>
     </div>
   </article>
 
@@ -156,6 +178,46 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     }
   });
 
+  // The contents list is collapsible on a narrow screen, where it would
+  // otherwise push the writeup off the first screen. On a wide one the
+  // summary is hidden, so it is forced back open to avoid a list that
+  // cannot be reopened.
+  const toc = document.querySelector('details.toc') as HTMLDetailsElement | null;
+  if (toc) {
+    const wide = window.matchMedia('(min-width: 64rem)');
+    const sync = () => { if (wide.matches) toc.open = true; };
+    wide.addEventListener('change', sync);
+    sync();
+  }
+
+  // Mark the section being read. A heading counts as current once it
+  // has passed the sticky bar, so the mark moves with the text rather
+  // than with whatever happens to be in the middle of the viewport.
+  const marks = document.querySelectorAll<HTMLAnchorElement>('.toc-item a');
+  if (marks.length) {
+    const targets = [...marks]
+      .map((a) => ({ a, el: document.getElementById(decodeURIComponent(a.hash.slice(1))) }))
+      .filter((t): t is { a: HTMLAnchorElement; el: HTMLElement } => t.el !== null);
+
+    let queued = false;
+    const mark = () => {
+      queued = false;
+      let current = targets[0];
+      for (const t of targets) {
+        if (t.el.getBoundingClientRect().top <= 96) current = t;
+      }
+      for (const t of targets) {
+        t.a.parentElement?.classList.toggle('is-here', t === current);
+      }
+    };
+    document.addEventListener('scroll', () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(mark);
+    }, { passive: true });
+    mark();
+  }
+
   // Backdrop and close button always dismiss.
   box.addEventListener('click', close);
   document.addEventListener('keydown', (e) => {
@@ -190,6 +252,67 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     font-size: var(--size-lg);
     line-height: var(--leading-text);
     color: var(--ink-muted);
+  }
+
+  /* ---- contents ------------------------------------------------
+     On a wide screen it is a rail beside the writeup that follows the
+     reader down; on a narrow one it collapses to a single line above
+     the text. */
+
+  .post-layout { display: grid; gap: var(--space-step); }
+
+  .toc {
+    margin-top: var(--space-step);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: var(--space-tight);
+  }
+  .toc-open {
+    cursor: pointer;
+    font-size: var(--size-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    list-style: none;
+  }
+  .toc-open::-webkit-details-marker { display: none; }
+  .toc-open::after { content: " +"; color: var(--accent-deep); }
+  .toc[open] .toc-open::after { content: " -"; }
+
+  .toc-list {
+    margin: var(--space-tight) 0 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: none;
+  }
+  .toc-item { font-size: var(--size-sm); line-height: 1.5; }
+  .toc-item + .toc-item { margin-top: 0.35rem; }
+  .toc-item a { color: var(--ink-muted); }
+  .toc-item a:hover { color: var(--accent); }
+  .toc-d3 { padding-left: 1.2ch; font-size: var(--size-xs); }
+  .toc-d3 a::before { content: "©4 "; color: var(--rule-strong); }
+  /* The section being read, marked as the page scrolls. */
+  .toc-item.is-here > a { color: var(--accent); }
+
+  @media (min-width: 64rem) {
+    .post-layout { grid-template-columns: minmax(0, 1fr) 14rem; }
+    .prose { grid-column: 1; grid-row: 1; }
+    .toc {
+      grid-column: 2;
+      grid-row: 1;
+      position: sticky;
+      top: 5.5rem;
+      align-self: start;
+      max-height: calc(100vh - 8rem);
+      overflow-y: auto;
+      background: none;
+      border: none;
+      border-left: 1px solid var(--rule);
+      border-radius: 0;
+      padding: 0 0 0 var(--space-tight);
+    }
+    .toc-open { display: none; }
   }
 
   /* The interface is monospaced; a writeup that runs to several hundred
