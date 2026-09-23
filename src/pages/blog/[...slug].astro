@@ -103,6 +103,43 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     });
   });
 
+  // A writeup is mostly commands, so every block of them gets a button
+  // that puts it on the clipboard. The block is wrapped rather than
+  // restyled, so the button can sit over its top right corner.
+  document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'code-wrap';
+    pre.parentNode?.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'code-copy';
+    btn.textContent = 'copy';
+    btn.setAttribute('aria-label', 'Copy this block to the clipboard');
+    wrap.appendChild(btn);
+
+    let reset: number | undefined;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.innerText);
+        btn.textContent = 'copied';
+      } catch {
+        // The clipboard API refuses when the window is not focused, and
+        // in a few other cases. Select the block instead, so the copy is
+        // one keystroke away rather than a drag across forty lines.
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+        btn.textContent = 'ctrl+c';
+      }
+      window.clearTimeout(reset);
+      reset = window.setTimeout(() => (btn.textContent = 'copy'), 1600);
+    });
+  });
+
   // On the image: toggle 1:1 if there is detail to gain, otherwise just close.
   boxImg.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -213,6 +250,31 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     color: var(--ink-muted);
   }
   .prose pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+  /* A block of commands, and the button that copies it. */
+  .code-wrap { position: relative; }
+  .prose > .code-wrap { max-width: min(100%, 76rem); }
+  .code-copy {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.15rem 0.5rem;
+    font-family: var(--face-mono);
+    font-size: var(--size-xs);
+    color: var(--ink-dim);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity var(--duration) var(--easing), color var(--duration) var(--easing);
+  }
+  /* Shown on approach, and always once it has focus, so it is reachable
+     from the keyboard as well as from the pointer. */
+  .code-wrap:hover .code-copy,
+  .code-copy:focus-visible { opacity: 1; }
+  .code-copy:hover { color: var(--accent); border-color: var(--accent-deep); }
+  @media (hover: none) { .code-copy { opacity: 1; } }
 
   .prose img {
     display: block;
