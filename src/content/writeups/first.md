@@ -8,4 +8,4 @@ draft: false
 
 # Hello is this thing on?...
 welcome on my blog
-![cat](/images/first/helloworld.png)
+![cat](/images/first/helloworld.webp)

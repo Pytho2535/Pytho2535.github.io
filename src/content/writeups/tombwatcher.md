@@ -93,7 +93,7 @@ rusthound-ce -d $DOMAIN -u $USER@$DOMAIN -p "$PASS" -i $DC_IP -z -o bh
 
 After a bit of searching we get this final graph:
 
-![BloodHound graph of the full path from henry to the ADCS OU](/images/tombwatcher/1.png)
+![BloodHound graph of the full path from henry to the ADCS OU](/images/tombwatcher/1.webp)
 
 So let's get through this step by step.
 
@@ -101,7 +101,7 @@ So let's get through this step by step.
 
 ### Henry -> Alfred
 
-![BloodHound showing henry with WriteSPN over alfred](/images/tombwatcher/2.png)
+![BloodHound showing henry with WriteSPN over alfred](/images/tombwatcher/2.webp)
 
 We see that we have `WriteSPN` over Alfred so we can:
 `Add SPN to Alfred` -> `Kerberoast` -> `Crack his password` -> `Have control over Alfred`
@@ -118,7 +118,7 @@ python3 targetedKerberoast.py -v -d tombwatcher.htb -u henry -p 'H3nry_987TGV!' 
 john --wordlist=/usr/share/wordlists/rockyou.txt hash
 ```
 
-![targetedKerberoast printing the TGS hash and john cracking it to basketball](/images/tombwatcher/3.png)
+![targetedKerberoast printing the TGS hash and john cracking it to basketball](/images/tombwatcher/3.webp)
 
 After cracking the hash we get credentials:
 `Alfred` : `basketball`
@@ -129,7 +129,7 @@ After cracking the hash we get credentials:
 
 Now we look at the next step.
 
-![BloodHound showing alfred with AddSelf over the Infrastructure group](/images/tombwatcher/4.png)
+![BloodHound showing alfred with AddSelf over the Infrastructure group](/images/tombwatcher/4.webp)
 
 So we run this command to add ourselves to the `Infrastructure` group:
 
@@ -143,7 +143,7 @@ bloodyad --host 10.129.232.167 -d tombwatcher.htb -u Alfred -p 'basketball' add 
 
 The next step looks like this, this means that we can read the gMSA hash of the machine which we can later use to do PassTheHash.
 
-![BloodHound showing Infrastructure with ReadGMSAPassword over ansible_dev$](/images/tombwatcher/5.png)
+![BloodHound showing Infrastructure with ReadGMSAPassword over ansible_dev$](/images/tombwatcher/5.webp)
 
 So we run this command (there might be a problem where Kerberos is still using the old ticket where we aren't part of the `Infrastructure` group, so we need to renew that ticket).
 
@@ -177,7 +177,7 @@ nxc ldap dc01.tombwatcher.htb -u Alfred -k --use-kcache --gmsa
 
 And then we get the hash `47f92356b62e2b1c7b185df4842b63ad`.
 
-![netexec dumping the gMSA NTLM hash for ansible_dev$](/images/tombwatcher/6.png)
+![netexec dumping the gMSA NTLM hash for ansible_dev$](/images/tombwatcher/6.webp)
 
 ---
 
@@ -185,7 +185,7 @@ And then we get the hash `47f92356b62e2b1c7b185df4842b63ad`.
 
 Next we have `ForceChangePassword` over the `sam` account.
 
-![BloodHound showing ansible_dev$ with ForceChangePassword over sam](/images/tombwatcher/7.png)
+![BloodHound showing ansible_dev$ with ForceChangePassword over sam](/images/tombwatcher/7.webp)
 
 So we change his password to `Password123!`:
 
@@ -201,7 +201,7 @@ So now we have `sam` : `Password123!`
 
 Next we have `WriteOwner` over `John`.
 
-![BloodHound showing sam with WriteOwner over john](/images/tombwatcher/8.png)
+![BloodHound showing sam with WriteOwner over john](/images/tombwatcher/8.webp)
 
 This means that we can change the account ownership using this command:
 
@@ -248,11 +248,11 @@ And we get `user.txt`:
 
 And we see that John has `GenericAll` over `ADCS`.
 
-![BloodHound showing john with GenericAll over the ADCS OU](/images/tombwatcher/9.png)
+![BloodHound showing john with GenericAll over the ADCS OU](/images/tombwatcher/9.webp)
 
 So we check in BloodHound, `CYPHER` --> `Saved queries` --> `Enrollment rights on published certificate templates` and we see this:
 
-![BloodHound enrollment rights query showing a group displayed as a raw SID](/images/tombwatcher/10.png)
+![BloodHound enrollment rights query showing a group displayed as a raw SID](/images/tombwatcher/10.webp)
 
 Because we see a SID instead of a name, it means that the group is deleted.
 
@@ -262,7 +262,7 @@ Let's check deleted objects:
 bloodyad -d tombwatcher.htb -u john -p 'Password123!' --host 10.129.232.167 get search -c '1.2.840.113556.1.4.2064' --filter '(isDeleted=TRUE)' --attr name,sAMAccountName,objectSid,lastKnownParent
 ```
 
-![Deleted objects listing with several cert_admin entries, the matching SID highlighted](/images/tombwatcher/11.png)
+![Deleted objects listing with several cert_admin entries, the matching SID highlighted](/images/tombwatcher/11.webp)
 
 Here we see that the user `cert_admin` is deleted.
 

