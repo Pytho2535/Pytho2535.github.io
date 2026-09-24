@@ -23,14 +23,14 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
-<Base title={`${post.data.title} — Pytho`} description={post.data.excerpt}>
+<Base title={post.data.title} description={post.data.excerpt}>
   <article class="section">
     <header class="post-head">
       <div class="post-meta">
         <time datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
         <span class="row-tag">{post.data.tag}</span>
       </div>
-      <h1 class="post-title">{post.data.title}</h1>
+      <h1 class="post-title" transition:name={`post-${post.id}`}>{post.data.title}</h1>
       <p class="post-lede">{post.data.excerpt}</p>
     </header>
 
@@ -71,157 +71,179 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 </Base>
 
 <script>
-  const box = document.getElementById('lightbox')!;
-  const boxImg = document.getElementById('lightbox-img') as HTMLImageElement;
-  const scroller = document.getElementById('lightbox-scroll')!;
-  const closeBtn = box.querySelector('.lightbox-close') as HTMLButtonElement;
-  let lastFocused: HTMLElement | null = null;
+  // Pages are swapped in place (see Base.astro), so this runs on every
+  // arrival at a writeup rather than once. Everything it hangs on the
+  // document is dropped again before the next page replaces this one.
+  document.addEventListener('astro:page-load', () => {
+    const box = document.getElementById('lightbox');
+    if (!box) return;
 
-  // The bar is sticky and the article sits inside the page column, so the
-  // overlay is reparented to <body> to be sure it covers both.
-  document.body.appendChild(box);
+    const page = new AbortController();
+    const signal = page.signal;
+    document.addEventListener('astro:before-swap', () => page.abort(), { once: true });
 
-  // Only offer the 1:1 view when the fitted image is actually smaller than the
-  // original, otherwise zooming in would just blur it.
-  function refreshZoomAffordance() {
-    const shrunk =
-      boxImg.naturalWidth > boxImg.clientWidth || boxImg.naturalHeight > boxImg.clientHeight;
-    box.classList.toggle('can-zoom', shrunk);
-  }
+    const boxImg = document.getElementById('lightbox-img') as HTMLImageElement;
+    const scroller = document.getElementById('lightbox-scroll')!;
+    const closeBtn = box.querySelector('.lightbox-close') as HTMLButtonElement;
+    let lastFocused: HTMLElement | null = null;
+    let closing: number | undefined;
 
-  function open(img: HTMLImageElement) {
-    boxImg.src = img.currentSrc || img.src;
-    boxImg.alt = img.alt;
-    lastFocused = document.activeElement as HTMLElement;
-    box.classList.remove('is-zoomed', 'can-zoom');
-    box.hidden = false;
-    scroller.scrollTop = 0;
-    scroller.scrollLeft = 0;
-    document.body.style.overflow = 'hidden';
-    closeBtn.focus();
-    if (boxImg.complete) refreshZoomAffordance();
-  }
+    // The bar is sticky and the article sits inside the page column, so the
+    // overlay is reparented to <body> to be sure it covers both.
+    document.body.appendChild(box);
 
-  function close() {
-    box.hidden = true;
-    boxImg.removeAttribute('src');
-    box.classList.remove('is-zoomed', 'can-zoom');
-    document.body.style.overflow = '';
-    lastFocused?.focus();
-  }
-
-  boxImg.addEventListener('load', refreshZoomAffordance);
-
-  // Every screenshot is reachable by keyboard as well as by pointer.
-  document.querySelectorAll<HTMLImageElement>('.prose img').forEach((img) => {
-    img.tabIndex = 0;
-    img.setAttribute('role', 'button');
-    img.addEventListener('click', () => open(img));
-    img.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        open(img);
-      }
-    });
-  });
-
-  // A writeup is mostly commands, so every block of them gets a button
-  // that puts it on the clipboard. The block is wrapped rather than
-  // restyled, so the button can sit over its top right corner.
-  document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'code-wrap';
-    pre.parentNode?.insertBefore(wrap, pre);
-    wrap.appendChild(pre);
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'code-copy';
-    btn.textContent = 'copy';
-    btn.setAttribute('aria-label', 'Copy this block to the clipboard');
-    wrap.appendChild(btn);
-
-    let reset: number | undefined;
-    btn.addEventListener('click', async () => {
-      try {
-        await navigator.clipboard.writeText(pre.innerText);
-        btn.textContent = 'copied';
-      } catch {
-        // The clipboard API refuses when the window is not focused, and
-        // in a few other cases. Select the block instead, so the copy is
-        // one keystroke away rather than a drag across forty lines.
-        const range = document.createRange();
-        range.selectNodeContents(pre);
-        const sel = window.getSelection();
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-        btn.textContent = 'ctrl+c';
-      }
-      window.clearTimeout(reset);
-      reset = window.setTimeout(() => (btn.textContent = 'copy'), 1600);
-    });
-  });
-
-  // On the image: toggle 1:1 if there is detail to gain, otherwise just close.
-  boxImg.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (box.classList.contains('is-zoomed')) {
-      box.classList.remove('is-zoomed');
-      refreshZoomAffordance();
-    } else if (box.classList.contains('can-zoom')) {
-      box.classList.add('is-zoomed');
-      // Centre the 1:1 view rather than dumping the user at the top-left corner.
-      scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
-      scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
-    } else {
-      close();
+    // Only offer the 1:1 view when the fitted image is actually smaller than the
+    // original, otherwise zooming in would just blur it.
+    function refreshZoomAffordance() {
+      const shrunk =
+        boxImg.naturalWidth > boxImg.clientWidth || boxImg.naturalHeight > boxImg.clientHeight;
+      box!.classList.toggle('can-zoom', shrunk);
     }
-  });
 
-  // The contents list is collapsible on a narrow screen, where it would
-  // otherwise push the writeup off the first screen. On a wide one the
-  // summary is hidden, so it is forced back open to avoid a list that
-  // cannot be reopened.
-  const toc = document.querySelector('details.toc') as HTMLDetailsElement | null;
-  if (toc) {
-    const wide = window.matchMedia('(min-width: 64rem)');
-    const sync = () => { if (wide.matches) toc.open = true; };
-    wide.addEventListener('change', sync);
-    sync();
-  }
+    function open(img: HTMLImageElement) {
+      window.clearTimeout(closing);
+      box!.classList.remove('is-closing', 'is-zoomed', 'can-zoom');
+      boxImg.src = img.currentSrc || img.src;
+      boxImg.alt = img.alt;
+      lastFocused = document.activeElement as HTMLElement;
+      box!.hidden = false;
+      scroller.scrollTop = 0;
+      scroller.scrollLeft = 0;
+      document.body.style.overflow = 'hidden';
+      closeBtn.focus();
+      if (boxImg.complete) refreshZoomAffordance();
+    }
 
-  // Mark the section being read. A heading counts as current once it
-  // has passed the sticky bar, so the mark moves with the text rather
-  // than with whatever happens to be in the middle of the viewport.
-  const marks = document.querySelectorAll<HTMLAnchorElement>('.toc-item a');
-  if (marks.length) {
-    const targets = [...marks]
-      .map((a) => ({ a, el: document.getElementById(decodeURIComponent(a.hash.slice(1))) }))
-      .filter((t): t is { a: HTMLAnchorElement; el: HTMLElement } => t.el !== null);
+    // The overlay fades out before it is hidden. The wait matches
+    // --duration-enter; under reduced motion the fade is instant anyway.
+    function close() {
+      if (box!.hidden || box!.classList.contains('is-closing')) return;
+      box!.classList.add('is-closing');
+      document.body.style.overflow = '';
+      lastFocused?.focus();
+      closing = window.setTimeout(() => {
+        box!.hidden = true;
+        box!.classList.remove('is-closing', 'is-zoomed', 'can-zoom');
+        boxImg.removeAttribute('src');
+      }, 200);
+    }
 
-    let queued = false;
-    const mark = () => {
-      queued = false;
-      let current = targets[0];
-      for (const t of targets) {
-        if (t.el.getBoundingClientRect().top <= 96) current = t;
+    boxImg.addEventListener('load', refreshZoomAffordance);
+
+    // Every screenshot is reachable by keyboard as well as by pointer.
+    document.querySelectorAll<HTMLImageElement>('.prose img').forEach((img) => {
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      img.addEventListener('click', () => open(img));
+      img.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open(img);
+        }
+      });
+    });
+
+    // A writeup is mostly commands, so every block of them gets a button
+    // that puts it on the clipboard. The block is wrapped rather than
+    // restyled, so the button can sit over its top right corner.
+    document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'code-wrap';
+      pre.parentNode?.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.textContent = 'copy';
+      btn.setAttribute('aria-label', 'Copy this block to the clipboard');
+      wrap.appendChild(btn);
+
+      let reset: number | undefined;
+      btn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(pre.innerText);
+          btn.textContent = 'copied';
+        } catch {
+          // The clipboard API refuses when the window is not focused, and
+          // in a few other cases. Select the block instead, so the copy is
+          // one keystroke away rather than a drag across forty lines.
+          const range = document.createRange();
+          range.selectNodeContents(pre);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(range);
+          btn.textContent = 'ctrl+c';
+        }
+        window.clearTimeout(reset);
+        reset = window.setTimeout(() => (btn.textContent = 'copy'), 1600);
+      });
+    });
+
+    // On the image: toggle 1:1 if there is detail to gain, otherwise just close.
+    boxImg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (box.classList.contains('is-zoomed')) {
+        box.classList.remove('is-zoomed');
+        refreshZoomAffordance();
+      } else if (box.classList.contains('can-zoom')) {
+        box.classList.add('is-zoomed');
+        // Centre the 1:1 view rather than dumping the user at the top-left corner.
+        scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+        scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
+      } else {
+        close();
       }
-      for (const t of targets) {
-        t.a.parentElement?.classList.toggle('is-here', t === current);
-      }
-    };
-    document.addEventListener('scroll', () => {
-      if (queued) return;
-      queued = true;
-      requestAnimationFrame(mark);
-    }, { passive: true });
-    mark();
-  }
+    });
 
-  // Backdrop and close button always dismiss.
-  box.addEventListener('click', close);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !box.hidden) close();
+    // The contents list is collapsible on a narrow screen, where it would
+    // otherwise push the writeup off the first screen. On a wide one the
+    // summary is hidden, so it is forced back open to avoid a list that
+    // cannot be reopened.
+    const toc = document.querySelector('details.toc') as HTMLDetailsElement | null;
+    if (toc) {
+      const wide = window.matchMedia('(min-width: 64rem)');
+      const sync = () => { if (wide.matches) toc.open = true; };
+      wide.addEventListener('change', sync, { signal });
+      sync();
+    }
+
+    // Mark the section being read. A heading counts as current once it
+    // has passed the sticky bar, so the mark moves with the text rather
+    // than with whatever happens to be in the middle of the viewport.
+    const marks = document.querySelectorAll<HTMLAnchorElement>('.toc-item a');
+    if (marks.length) {
+      const targets = [...marks]
+        .map((a) => ({ a, el: document.getElementById(decodeURIComponent(a.hash.slice(1))) }))
+        .filter((t): t is { a: HTMLAnchorElement; el: HTMLElement } => t.el !== null);
+
+      let queued = false;
+      const mark = () => {
+        queued = false;
+        let current = targets[0];
+        for (const t of targets) {
+          if (t.el.getBoundingClientRect().top <= 96) current = t;
+        }
+        for (const t of targets) {
+          t.a.parentElement?.classList.toggle('is-here', t === current);
+        }
+      };
+      document.addEventListener('scroll', () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame(mark);
+      }, { passive: true, signal });
+      mark();
+    }
+
+    // Backdrop and close button always dismiss.
+    box.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !box.hidden) close();
+    }, { signal });
+
+    // Leaving with the viewer open would carry the scroll lock over.
+    signal.addEventListener('abort', () => { document.body.style.overflow = ''; });
   });
 </script>
 
@@ -260,6 +282,10 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
      the text. */
 
   .post-layout { display: grid; gap: var(--space-step); }
+  /* A grid item is as wide as its widest child unless it is told
+     otherwise, so one unbreakable table used to drag the whole column
+     past the edge of a phone screen. */
+  .post-layout > * { min-width: 0; }
 
   .toc {
     margin-top: var(--space-step);
@@ -324,6 +350,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     font-size: var(--size-lg);
     line-height: var(--leading-loose);
     color: var(--ink-muted);
+    overflow-wrap: break-word;
   }
   .prose > * + * { margin-top: 1.1em; }
   .prose > pre, .prose > table, .prose > p:has(> img) { max-width: min(100%, 76rem); }
@@ -410,8 +437,13 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 
   .prose hr { border: none; border-top: 1px dashed var(--rule); margin: 2em 0; }
 
+  /* The fact table is monospaced and its cells do not wrap, so on a
+     phone it is wider than the screen. display: block lets it scroll
+     sideways by itself rather than taking the writeup with it. */
   .prose table {
+    display: block;
     width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
     font-family: var(--face-mono);
     font-size: var(--size-sm);
@@ -437,8 +469,18 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     justify-content: center;
     padding: 2rem;
     background: var(--overlay);
+    animation: lightbox-in var(--duration-enter) var(--easing) both;
   }
   .lightbox[hidden] { display: none; }
+  /* It fades in over the page and the screenshot settles from just
+     under full size; closing plays the same thing backwards. */
+  .lightbox .lightbox-img { animation: lightbox-img-in var(--duration-enter) var(--easing) both; }
+  .lightbox.is-closing { animation-name: lightbox-out; }
+  .lightbox.is-closing .lightbox-img { animation-name: lightbox-img-out; }
+  @keyframes lightbox-in { from { opacity: 0; } }
+  @keyframes lightbox-out { to { opacity: 0; } }
+  @keyframes lightbox-img-in { from { transform: scale(0.97); } }
+  @keyframes lightbox-img-out { to { transform: scale(0.97); } }
   .lightbox-scroll {
     width: 100%;
     height: 100%;

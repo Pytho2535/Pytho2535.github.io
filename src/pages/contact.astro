@@ -1,51 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import { email, handles } from '../lib/site';
+import { pgpKey, pgpFacts } from '../lib/pgp';
+import { url } from '../lib/url';
 
-const pgp = `-----BEGIN PGP PUBLIC KEY BLOCK-----
-
-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
-oVMJP7mHff8Jftzug3n9adw=
-=3V5X
------END PGP PUBLIC KEY BLOCK-----`;
+const keyUrl = url('/pgp.asc');
+const importCmd = `curl -s ${new URL(keyUrl, Astro.site)} | gpg --import`;
 ---
 
-<Base title="Contact — Pytho" description="Mail, PGP public key and platform handles.">
+<Base title="Contact" description="Mail, PGP public key and platform handles.">
   <section class="section" aria-labelledby="contact-head">
     <h2 class="head" id="contact-head">contact</h2>
     <div class="rule"></div>
@@ -55,7 +18,7 @@ oVMJP7mHff8Jftzug3n9adw=
         <dt>mail</dt>
         <dd>
           <a href={`mailto:${email}`}>{email}</a>
-          <button class="copy-btn" type="button" id="copy-email" data-copy={email}>copy</button>
+          <button class="copy-btn" type="button" data-copy={email}>copy</button>
         </dd>
       </div>
       {handles.map((h) => (
@@ -71,30 +34,96 @@ oVMJP7mHff8Jftzug3n9adw=
     <h2 class="head" id="pgp-head">pgp public key</h2>
     <div class="rule"></div>
 
-    <div class="note">
-      <p>
-        Encrypt anything that should not sit in a mailbox in plain text. Import
-        the key below and check the user ID matches before you trust it.
-      </p>
-    </div>
+    <div class="pgp">
+      <div class="pgp-side">
+        <div class="note">
+          <p>
+            Encrypt anything that should not sit in a mailbox in plain text. Import
+            the key and check the fingerprint matches before you trust it.
+          </p>
+        </div>
 
-    <pre class="keyblock" aria-label="PGP public key block">{pgp}</pre>
+        <dl class="record pgp-record">
+          <div class="rec">
+            <dt>fingerprint</dt>
+            <dd class="pgp-fpr">{pgpFacts.fingerprint}</dd>
+          </div>
+          <div class="rec">
+            <dt>key</dt>
+            <dd>{pgpFacts.algorithm}</dd>
+          </div>
+          <div class="rec">
+            <dt>valid</dt>
+            <dd>{pgpFacts.created} → {pgpFacts.expires}</dd>
+          </div>
+        </dl>
+
+        <pre class="keyblock pgp-cmd"><span class="pgp-sigil">$ </span>{importCmd}</pre>
+
+        <div class="pgp-actions">
+          <button class="copy-btn" type="button" data-copy={importCmd}>copy command</button>
+          <button class="copy-btn" type="button" data-copy={pgpKey}>copy key</button>
+          <a class="copy-btn" href={keyUrl} download="pytho.asc">download .asc</a>
+        </div>
+      </div>
+
+      <pre class="keyblock pgp-key" aria-label="PGP public key block">{pgpKey}</pre>
+    </div>
   </section>
 </Base>
 
 <script>
   // A state change the reader caused, reported in text rather than in motion.
-  const btn = document.getElementById('copy-email');
-  btn?.addEventListener('click', async () => {
-    const value = btn.getAttribute('data-copy') ?? '';
-    try {
-      await navigator.clipboard.writeText(value);
-      btn.textContent = 'copied';
-      setTimeout(() => (btn.textContent = 'copy'), 1600);
-    } catch {
-      // No clipboard access (insecure origin, or the user declined). The
-      // address is selectable text right next to the button, so say so.
-      btn.textContent = 'select it';
-    }
+  // Bound on every arrival, since pages are swapped in place (Base.astro).
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLButtonElement>('button[data-copy]').forEach((btn) => {
+      const label = btn.textContent;
+      let reset: number | undefined;
+      btn.addEventListener('click', async () => {
+        const value = btn.getAttribute('data-copy') ?? '';
+        try {
+          await navigator.clipboard.writeText(value);
+          btn.textContent = 'copied';
+        } catch {
+          // No clipboard access (insecure origin, or the user declined). The
+          // text is selectable right next to the button, so say so.
+          btn.textContent = 'select it';
+        }
+        window.clearTimeout(reset);
+        reset = window.setTimeout(() => (btn.textContent = label), 1600);
+      });
+    });
   });
 </script>
+
+<style>
+  /* The key is narrow and long, so on a wide screen it takes the right
+     column and what you need to use it sits beside it, instead of the
+     block hugging the left edge with nothing next to it. */
+  .pgp {
+    display: grid;
+    gap: var(--space-step);
+    margin-top: var(--space-step);
+  }
+  .pgp-side { min-width: 0; display: flex; flex-direction: column; gap: var(--space-step); }
+  .pgp-record .rec { grid-template-columns: 8rem minmax(0, 1fr); }
+  .pgp-fpr { color: var(--accent); letter-spacing: 0.02em; }
+  .pgp .keyblock { margin: 0; }
+  .pgp-cmd { color: var(--ink-muted); }
+  .pgp-sigil { color: var(--accent); }
+  .pgp-actions { display: flex; flex-wrap: wrap; gap: var(--space-tight) var(--space-step); }
+  .pgp-actions .copy-btn { margin-left: 0; text-decoration: none; }
+
+  @media (max-width: 46rem) {
+    .pgp-record .rec { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (min-width: 64rem) {
+    .pgp { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+    /* The key is twice as tall as what sits beside it, so the side
+       stays in view while the key scrolls past. */
+    .pgp-side { position: sticky; top: 5.5rem; }
+    /* Printed at its own width, the way gpg prints it: 64 columns. */
+    .pgp-key { white-space: pre; word-break: normal; }
+  }
+</style>

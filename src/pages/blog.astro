@@ -12,7 +12,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 ---
 
 <Base
-  title="Writeups — Pytho"
+  title="Writeups"
   description="Hack The Box writeups and notes, newest first."
 >
   <section class="section" aria-labelledby="writeups-head">
@@ -31,7 +31,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
         <a class="row" href={url(`/blog/${post.id}`)}>
           <time class="row-date" datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
           <span class="row-body">
-            <span class="row-name">{post.data.title}</span>
+            <span class="row-name" transition:name={`post-${post.id}`}>{post.data.title}</span>
             <span class="row-note">{post.data.excerpt}</span>
           </span>
           <span class="row-tag">{post.data.tag}</span>

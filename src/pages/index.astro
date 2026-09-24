@@ -34,8 +34,8 @@ const sections = [
 
   <section class="section" aria-label="Sections">
     <div class="cards">
-      {sections.map((s) => (
-        <a class="card" href={url(s.href)}>
+      {sections.map((s, i) => (
+        <a class="card" href={url(s.href)} style={`--i: ${i}`}>
           <span class="card-arrow" aria-hidden="true">&#8594;</span>
           <h3 class="card-name">{s.name}</h3>
           <p class="card-note">{s.note}</p>

@@ -73,6 +73,9 @@
   /* --- motion --- */
   --duration: 140ms;
   --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Things arriving: the landing cards, the image viewer, a page. */
+  --duration-enter: 200ms;
+  --stagger: 70ms;
 }
 
 html { background: var(--canvas); color-scheme: dark; }
@@ -92,11 +95,15 @@ body {
   outline-offset: 2px;
 }
 
-/* The wordmark is the only thing on the site that moves on its own,
-   and it stops here for anyone who has asked for less motion. */
+/* Everything that moves stops here for anyone who has asked for less
+   motion: the wordmark, the cards, the viewer, and the page swap. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *, *::before, *::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }

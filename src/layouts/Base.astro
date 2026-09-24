@@ -1,7 +1,12 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 import Bar from '../components/Bar.astro';
 import { url } from '../lib/url';
+/* Imported rather than served from public/, so its URL carries a hash of
+   the file. Discord, Slack and the rest cache a link preview by image
+   URL; a new banner under the old name would never be fetched again. */
+import banner from '../assets/banner.png';
 
 interface Props {
   title?: string;
@@ -13,16 +18,16 @@ interface Props {
 }
 
 const {
-  title = 'Pytho — security researcher',
+  title = 'Pytho',
   description =
     'Pytho — security researcher and bug bounty hunter. Hack The Box writeups, profiles and contact.',
-  image = '/images/banner.png',
+  image,
   cover = false,
 } = Astro.props;
 
 // Absolute URLs for social-share (Open Graph / Twitter) link previews.
-const site = Astro.site ?? new URL('https://Pytho2535.github.io');
-const ogImage = new URL(url(image), site).href;
+const site = Astro.site ?? new URL('https://pytho0.day');
+const ogImage = new URL(image ? url(image) : banner.src, site).href;
 const canonical = new URL(Astro.url.pathname, site).href;
 ---
 
@@ -59,6 +64,12 @@ const canonical = new URL(Astro.url.pathname, site).href;
          pixel, and swapping it in late shifts every line. -->
     <link rel="preload" href={url('/fonts/jetbrains-mono-400-latin.woff2')} as="font" type="font/woff2" crossorigin />
     <link rel="preload" href={url('/fonts/jetbrains-mono-700-latin.woff2')} as="font" type="font/woff2" crossorigin />
+
+    <!-- Moving between pages swaps the content in place instead of
+         reloading, so the bar stays put and a writeup's title can grow
+         out of its row in the list. Page scripts therefore run on
+         astro:page-load, not once on load. -->
+    <ClientRouter />
   </head>
   <body>
     <a class="skip" href="#main">skip to content</a>

@@ -3,7 +3,7 @@ import { defineConfig } from 'astro/config';
 import { rehypeImageAttrs } from './src/lib/rehype-image-attrs.mjs';
 
 export default defineConfig({
-  site: 'https://Pytho2535.github.io',
+  site: 'https://pytho0.day',
   base: '/',
   markdown: {
     // Stamps every screenshot in a writeup with its real size and a

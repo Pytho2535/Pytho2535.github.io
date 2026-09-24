@@ -52,6 +52,9 @@ a { color: var(--accent); text-decoration: none; }
   padding: 1rem clamp(1rem, 3vw, 2.5rem);
   border-bottom: 1px solid var(--rule);
   background: var(--canvas);
+  /* Its own layer in a page swap, so it stays still while the page
+     under it changes. */
+  view-transition-name: bar;
 }
 
 .bar-mark {
@@ -243,15 +246,46 @@ main > .section:first-child { margin-top: clamp(2rem, 5vw, 3.25rem); }
 
 .card {
   position: relative;
+  isolation: isolate;
   display: block;
   padding: 1.6rem 1.75rem;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--surface);
-  transition: border-color var(--duration) var(--easing),
-              background var(--duration) var(--easing);
+  overflow: hidden;
+  transition: border-color var(--duration) var(--easing);
 }
-.card:hover { border-color: var(--accent-deep); background: var(--surface-2); }
+
+/* Pointing at a card selects it the way a picker in a terminal does:
+   a block of the accent sweeps in from the left and the text turns
+   dark on it. The block is drawn behind the text, never over it. */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--duration-enter) var(--easing);
+}
+.card:hover,
+.card:focus-visible { border-color: var(--accent); }
+.card:hover::before,
+.card:focus-visible::before { transform: scaleX(1); }
+.card:hover :is(.card-name, .card-note, .card-arrow),
+.card:focus-visible :is(.card-name, .card-note, .card-arrow) {
+  color: var(--canvas);
+  text-shadow: none;
+}
+
+/* On the landing page the cards arrive one after another, the way
+   lines of output do. Opacity only: nothing slides. */
+main.is-cover .card {
+  animation: card-in var(--duration-enter) var(--easing) both;
+  animation-delay: calc(120ms + var(--i, 0) * var(--stagger));
+}
+@keyframes card-in { from { opacity: 0; } }
 
 .card-name {
   margin: 0;
@@ -259,21 +293,24 @@ main > .section:first-child { margin-top: clamp(2rem, 5vw, 3.25rem); }
   font-weight: 700;
   color: var(--accent);
   text-shadow: 0 0 16px var(--accent-glow);
+  transition: color var(--duration) var(--easing) 40ms;
 }
 .card-arrow {
   position: absolute;
   top: 1.6rem;
   right: 1.75rem;
   color: var(--ink-dim);
-  transition: transform var(--duration) var(--easing), color var(--duration) var(--easing);
+  transition: transform var(--duration) var(--easing), color var(--duration) var(--easing) 40ms;
 }
-.card:hover .card-arrow { color: var(--accent); transform: translateX(3px); }
+.card:hover .card-arrow,
+.card:focus-visible .card-arrow { transform: translateX(3px); }
 .card-note {
   margin: 1rem 0 0;
   max-width: var(--measure-note);
   font-size: var(--size-sm);
   line-height: var(--leading-text);
   color: var(--ink-muted);
+  transition: color var(--duration) var(--easing) 40ms;
 }
 
 /* ============================================================
