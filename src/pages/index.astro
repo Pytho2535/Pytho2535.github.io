@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Logo from '../components/Logo.astro';
+import Botnet from '../components/Botnet.astro';
 import { url } from '../lib/url';
 
 /* The landing page is the wordmark and the three ways into the site.
@@ -26,8 +27,9 @@ const sections = [
 ---
 
 <Base cover>
-  <section class="hero hero-centred">
+  <section class="hero hero-centred hero-botnet">
     <Logo />
+    <Botnet />
   </section>
 
   <div class="rule"></div>

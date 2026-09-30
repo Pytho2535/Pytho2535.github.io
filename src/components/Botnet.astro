@@ -1,0 +1,584 @@
+---
+/* A small botnet around the wordmark, flooding it with packets.
+
+   Layers, from the letters up:
+     .logo         the green ASCII art (CSS glitch, unchanged).
+     .logo-tear    a short-lived scramble at the point of impact.
+     canvas        the machines, the packets, the sparks, the shield.
+
+   Two things happen on it:
+     - A C2 unit at the top now and then signals every machine, and a
+       beat later they all fire at once.
+     - A firewall of fire can come up around the word; packets break on
+       it instead of landing. Hovering the word raises it by hand.
+
+   Under prefers-reduced-motion the machines are drawn once and
+   nothing is sent. */
+---
+
+<canvas class="botnet-map" aria-hidden="true"></canvas>
+<canvas class="botnet" aria-hidden="true"></canvas>
+
+<script>
+  type Side = -1 | 0 | 1;
+  type Machine = { x: number; y: number; side: Side; next: number; flash: number; blink: number };
+  type Packet = {
+    x0: number; y0: number; cx: number; cy: number; x1: number; y1: number;
+    t0: number; dur: number; row: number; col: number;
+  };
+  type Spark = { x: number; y: number; vx: number; vy: number; t0: number; life: number; color: string };
+  type Tear = {
+    el: HTMLDivElement; text: HTMLPreElement; ghostA: HTMLPreElement; ghostB: HTMLPreElement;
+    r0: number; rows: number; c0: number; span: number; until: number; next: number;
+  };
+  type Ripple = { x: number; y: number; t0: number };
+
+  const NOISE = '#$%&@!?/\\|<>*+=~^01';
+  const rand = (a: number, b: number) => a + Math.random() * (b - a);
+  const pick = <T,>(xs: T[]) => xs[Math.floor(Math.random() * xs.length)];
+
+  function start(canvas: HTMLCanvasElement) {
+    const hero = canvas.parentElement as HTMLElement;
+    const wrap = hero.querySelector<HTMLElement>('.logo-wrap');
+    const logo = wrap?.querySelector<HTMLPreElement>('.logo');
+    const ctx = canvas.getContext('2d');
+    const mapCanvas = hero.querySelector<HTMLCanvasElement>('canvas.botnet-map');
+    const mctx = mapCanvas?.getContext('2d') ?? null;
+    if (!wrap || !logo || !ctx) return () => {};
+
+    const lines = (logo.dataset.text ?? '').split(/\r?\n/);
+    const cols = Math.max(...lines.map((l) => l.length));
+    const rowsN = lines.length;
+    const padded = lines.map((l) => l.padEnd(cols));
+
+    // Only cells with ink in them are worth aiming at or breaking.
+    const cells: { row: number; col: number }[] = [];
+    padded.forEach((l, row) => [...l].forEach((ch, col) => ch !== ' ' && cells.push({ row, col })));
+
+    // A dotted world map for the backdrop. The continents are stored as
+    // outlines in longitude/latitude, filled with dots by a point-in-
+    // polygon test, so the shapes read as the real thing. The machines
+    // are then stood on the land, so the flood looks like it comes in
+    // from many countries at once.
+    const DOTS_X = 90, DOTS_Y = 44;
+    const COAST: [number, number][][] = [
+      // North and Central America.
+      [[-158, 66], [-165, 60], [-152, 58], [-136, 58], [-128, 52], [-123, 48], [-124, 40], [-117, 33], [-110, 23], [-105, 20], [-97, 16], [-90, 17], [-83, 9], [-80, 13], [-88, 21], [-97, 26], [-90, 29], [-82, 25], [-80, 31], [-74, 39], [-64, 44], [-56, 50], [-64, 54], [-78, 52], [-82, 62], [-95, 68], [-120, 70], [-140, 69], [-156, 71]],
+      // Greenland.
+      [[-45, 60], [-28, 60], [-20, 68], [-22, 76], [-32, 82], [-48, 81], [-52, 72]],
+      // South America.
+      [[-78, 8], [-64, 10], [-52, 5], [-46, 0], [-38, -5], [-35, -8], [-40, -15], [-42, -23], [-48, -28], [-55, -34], [-58, -39], [-66, -45], [-71, -52], [-74, -45], [-72, -35], [-70, -25], [-71, -18], [-77, -12], [-81, -5], [-80, 2]],
+      // Africa.
+      [[-16, 15], [-8, 10], [0, 5], [8, 4], [9, -2], [13, -10], [12, -18], [15, -28], [20, -35], [27, -34], [33, -26], [40, -16], [41, -4], [48, 5], [51, 11], [44, 11], [37, 11], [34, 20], [33, 30], [28, 33], [20, 33], [11, 35], [0, 36], [-6, 35], [-11, 28], [-16, 21]],
+      // Eurasia, with the Arabian and Indian peninsulas and SE Asia.
+      [[-9, 38], [-2, 36], [4, 40], [10, 44], [16, 41], [23, 40], [28, 37], [34, 36], [36, 31], [35, 25], [40, 15], [48, 13], [54, 17], [57, 23], [62, 25], [67, 25], [72, 20], [76, 9], [80, 13], [87, 21], [92, 22], [97, 16], [100, 8], [104, 10], [108, 15], [106, 21], [112, 21], [118, 22], [122, 31], [121, 39], [127, 39], [130, 43], [136, 46], [143, 50], [155, 60], [162, 68], [172, 66], [178, 68], [165, 71], [140, 73], [110, 74], [75, 73], [55, 70], [42, 66], [33, 70], [24, 70], [15, 65], [9, 62], [5, 58], [8, 55], [2, 51], [-4, 49], [-9, 44]],
+      // Australia.
+      [[114, -22], [113, -29], [118, -34], [129, -32], [137, -35], [141, -38], [147, -38], [153, -30], [153, -25], [146, -18], [142, -11], [136, -12], [130, -11], [123, -16]],
+      // Madagascar.
+      [[43, -13], [49, -15], [50, -22], [46, -25], [44, -20]],
+      // Japan.
+      [[140, 42], [142, 39], [140, 36], [136, 35], [131, 33], [130, 34], [135, 37], [138, 38]],
+      // British Isles.
+      [[-5, 50], [-3, 53], [-5, 58], [-8, 57], [-6, 52]],
+      // New Guinea.
+      [[131, -1], [141, -3], [147, -8], [141, -9], [133, -4]],
+      // Sumatra and Borneo.
+      [[95, 5], [100, 0], [104, -5], [101, -5], [97, 0]],
+      [[109, 2], [117, 5], [118, -2], [110, -4]],
+    ];
+    // To normalised map space: x over 360° of longitude, y over 180° of latitude.
+    const POLYS = COAST.map((p) => p.map(([lon, lat]) => [(lon + 180) / 360, (90 - lat) / 180] as [number, number]));
+    const inLand = (nx: number, ny: number) => {
+      for (const poly of POLYS) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const [xi, yi] = poly[i], [xj, yj] = poly[j];
+          if ((yi > ny) !== (yj > ny) && nx < ((xj - xi) * (ny - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+        if (inside) return true;
+      }
+      return false;
+    };
+    const landGrid: { gx: number; gy: number }[] = [];
+    for (let gy = 0; gy < DOTS_Y; gy++) {
+      for (let gx = 0; gx < DOTS_X; gx++) {
+        if (inLand((gx + 0.5) / DOTS_X, (gy + 0.5) / DOTS_Y)) landGrid.push({ gx, gy });
+      }
+    }
+
+    const root = getComputedStyle(document.documentElement);
+    const tok = (name: string) => root.getPropertyValue(name).trim();
+    const C = {
+      accent: tok('--accent'), deep: tok('--accent-deep'), quiet: tok('--accent-quiet'),
+      a: tok('--glitch-a'), b: tok('--glitch-b'),
+      frame: tok('--rule-strong'), screen: tok('--code-bg'), dim: tok('--ink-dim'),
+      map: tok('--map'), attack: tok('--attack'), attackDeep: tok('--attack-deep'), attackScreen: tok('--attack-screen'),
+      fire: tok('--fire'), fireDeep: tok('--fire-deep'), fireHot: tok('--fire-hot'),
+    };
+
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let W = 0, H = 0;
+    let mapWpx = 0, mapHpx = 0, mapX = 0, mapY = 0;
+    const cellPos = (gx: number, gy: number) => ({
+      x: mapX + ((gx + 0.5) / DOTS_X) * mapWpx,
+      y: mapY + ((gy + 0.5) / DOTS_Y) * mapHpx,
+    });
+    const art = { x: 0, y: 0, w: 0, h: 0, cw: 0, lh: 0 };
+    let machines: Machine[] = [];
+    let packets: Packet[] = [];
+    let sparks: Spark[] = [];
+    let tears: Tear[] = [];
+    let ripples: Ripple[] = [];
+    let hits: number[] = [];
+    let raf = 0;
+    let last = performance.now();
+
+    // The C2 unit and the firewall.
+    const c2 = { x: 0, y: 0, next: performance.now() + rand(4000, 8000), cmd0: -1e9, fireAt: 0, applied: true };
+    const shield = { hover: false, autoUntil: -1e9, next: performance.now() + rand(3000, 7000) };
+
+    function drawMap() {
+      if (!mctx) return;
+      mctx.clearRect(0, 0, W, H);
+      const r = Math.max(0.8, Math.min(mapWpx / DOTS_X, mapHpx / DOTS_Y) * 0.34);
+      mctx.fillStyle = C.map;
+      mctx.globalAlpha = 0.5;
+      for (const c of landGrid) {
+        const p = cellPos(c.gx, c.gy);
+        mctx.beginPath();
+        mctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        mctx.fill();
+      }
+      mctx.globalAlpha = 1;
+
+      // Feather the dots out from under the wordmark, so the letters
+      // sit in their own dark clearing and read against the map. The
+      // mask colour is irrelevant: destination-out erases by its alpha.
+      const rx = art.w / 2 + 28, ry = art.h / 2 + 20;
+      if (rx > 0 && ry > 0) {
+        mctx.save();
+        mctx.globalCompositeOperation = 'destination-out';
+        mctx.translate(art.x + art.w / 2, art.y + art.h / 2);
+        mctx.scale(1, ry / rx);
+        const g = mctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+        g.addColorStop(0, 'rgba(0,0,0,1)');
+        g.addColorStop(0.62, 'rgba(0,0,0,1)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        mctx.fillStyle = g;
+        mctx.beginPath();
+        mctx.arc(0, 0, rx, 0, Math.PI * 2);
+        mctx.fill();
+        mctx.restore();
+      }
+    }
+
+    // The machines stand on land, spread out and clear of the word, so
+    // the flood reads as coming in from many countries at once.
+    function place(now: number) {
+      const cx = art.x + art.w / 2;
+      const wx0 = art.x - 10, wx1 = art.x + art.w + 10, wy0 = art.y - 8, wy1 = art.y + art.h + 8;
+      const pts = landGrid
+        .map((c) => cellPos(c.gx, c.gy))
+        .filter((p) => p.x > 12 && p.x < W - 12 && p.y > 12 && p.y < H - 12)
+        .filter((p) => !(p.x > wx0 && p.x < wx1 && p.y > wy0 && p.y < wy1));
+      for (let i = pts.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [pts[i], pts[j]] = [pts[j], pts[i]];
+      }
+      const target = Math.max(5, Math.min(12, Math.round(W / 130)));
+      const minD = Math.min(mapWpx / DOTS_X, mapHpx / DOTS_Y) * 3;
+      const chosen: { x: number; y: number }[] = [];
+      for (const p of pts) {
+        if (chosen.length >= target) break;
+        if (chosen.every((q) => Math.hypot(q.x - p.x, q.y - p.y) > minD)) chosen.push(p);
+      }
+      return chosen.map((p): Machine => ({
+        x: p.x, y: p.y, side: p.x < cx ? -1 : 1,
+        next: now + rand(300, 2400), flash: -1e9, blink: rand(0, 1000),
+      }));
+    }
+
+    function layout() {
+      const cr = canvas.getBoundingClientRect();
+      const lr = logo!.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = cr.width;
+      H = cr.height;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (mapCanvas && mctx) {
+        mapCanvas.width = Math.round(W * dpr);
+        mapCanvas.height = Math.round(H * dpr);
+        mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      Object.assign(art, {
+        x: lr.left - cr.left, y: lr.top - cr.top, w: lr.width, h: lr.height,
+        cw: lr.width / cols, lh: lr.height / rowsN,
+      });
+      // Fill the canvas with the map, edge to edge with a small margin.
+      const mpad = 8;
+      mapWpx = W - mpad * 2; mapHpx = H - mpad * 2;
+      mapX = mpad; mapY = mpad;
+      drawMap();
+      // The command unit sits centred above the word.
+      c2.x = art.x + art.w / 2;
+      c2.y = Math.max(12, art.y - 22);
+      packets = [];
+      machines = place(performance.now());
+      if (still) draw(performance.now());
+    }
+
+    function fire(m: Machine, now: number, force = false) {
+      m.flash = now;
+      const burst = force || Math.random() < 0.22 ? Math.floor(rand(3, 7)) : 1;
+      // Each flank aims at the half of the word that faces it.
+      const pool = cells.filter((c) =>
+        m.side < 0 ? c.col < cols * 0.65 : m.side > 0 ? c.col > cols * 0.35 : true);
+      for (let k = 0; k < burst; k++) {
+        const { row, col } = pick(pool);
+        const x0 = m.x, y0 = m.y - 1;
+        const x1 = art.x + (col + 0.5) * art.cw;
+        const y1 = art.y + (row + 0.5) * art.lh;
+        const dx = x1 - x0, dy = y1 - y0;
+        const dist = Math.hypot(dx, dy);
+        const bend = rand(-0.18, 0.18) * dist;
+        packets.push({
+          x0, y0, x1, y1, row, col,
+          cx: (x0 + x1) / 2 - (dy / dist) * bend,
+          cy: (y0 + y1) / 2 + (dx / dist) * bend,
+          t0: now + k * 75,
+          dur: Math.max(320, (dist / rand(360, 560)) * 1000),
+        });
+      }
+      m.next = now + (burst > 1 ? rand(1400, 3200) : rand(450, 2600));
+    }
+
+    function at(p: Packet, t: number) {
+      const u = 1 - t;
+      return {
+        x: u * u * p.x0 + 2 * u * t * p.cx + t * t * p.x1,
+        y: u * u * p.y0 + 2 * u * t * p.cy + t * t * p.y1,
+      };
+    }
+
+    function burstSparks(x: number, y: number, angle: number, spread: number, n: number, now: number, colors: string[]) {
+      for (let i = 0; i < n; i++) {
+        const a = angle + rand(-spread, spread);
+        const v = rand(30, 110);
+        sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t0: now, life: rand(180, 380), color: pick(colors) });
+      }
+    }
+
+    function hit(p: Packet, now: number) {
+      const back = Math.atan2(p.y1 - p.cy, p.x1 - p.cx) + Math.PI;
+      burstSparks(p.x1, p.y1, back, 1.2, 6, now, [C.attack, C.attack, C.a, C.b]);
+      tear(p.row, p.col, now);
+
+      // Enough hits close together and the whole word jolts.
+      hits = hits.filter((t) => now - t < 400);
+      hits.push(now);
+      if (hits.length >= 4) {
+        wrap!.classList.add('is-flooded');
+        window.setTimeout(() => wrap!.classList.remove('is-flooded'), 90);
+      }
+    }
+
+    function blockPacket(x: number, y: number, now: number) {
+      const toWord = Math.atan2(art.y + art.h / 2 - y, art.x + art.w / 2 - x) + Math.PI;
+      burstSparks(x, y, toWord, 1.4, 5, now, [C.fire, C.fireHot, C.fireDeep]);
+      ripples.push({ x, y, t0: now });
+    }
+
+    function tear(row: number, col: number, now: number) {
+      const rows = Math.random() < 0.4 ? 2 : 1;
+      const r0 = Math.max(0, Math.min(rowsN - rows, row - (rows > 1 && Math.random() < 0.5 ? 1 : 0)));
+      const span = Math.floor(rand(3, 9));
+      const c0 = Math.max(0, Math.min(cols - span, col - Math.floor(span / 2)));
+
+      const el = document.createElement('div');
+      el.className = 'logo-tear';
+      el.setAttribute('aria-hidden', 'true');
+      const text = document.createElement('pre');
+      text.className = 'logo-tear-text';
+      const ghostA = document.createElement('pre');
+      ghostA.className = 'logo-tear-ghost is-a';
+      const ghostB = document.createElement('pre');
+      ghostB.className = 'logo-tear-ghost is-b';
+      el.append(text, ghostA, ghostB);
+      el.style.clipPath =
+        `inset(${(r0 / rowsN) * 100}% ${((cols - c0 - span) / cols) * 100}% ` +
+        `${((rowsN - r0 - rows) / rowsN) * 100}% ${(c0 / cols) * 100}%)`;
+      wrap!.append(el);
+
+      const t: Tear = { el, text, ghostA, ghostB, r0, rows, c0, span, until: now + rand(110, 280), next: 0 };
+      tears.push(t);
+      jitter(t, now);
+    }
+
+    // A new frame of the same tear: fresh noise, a fresh shove.
+    function jitter(t: Tear, now: number) {
+      const s = padded.map((l, r) => {
+        if (r < t.r0 || r >= t.r0 + t.rows) return l;
+        return [...l].map((ch, c) =>
+          c >= t.c0 - 1 && c < t.c0 + t.span + 1 && (ch !== ' ' || Math.random() < 0.15) && Math.random() < 0.45
+            ? pick([...NOISE]) : ch).join('');
+      }).join('\n');
+      const dx = rand(-1, 1) * 0.9;
+      t.text.textContent = s;
+      t.ghostA.textContent = s;
+      t.ghostB.textContent = s;
+      t.text.style.transform = `translateX(${dx}ch)`;
+      t.ghostA.style.transform = `translateX(${dx - 0.3}ch)`;
+      t.ghostB.style.transform = `translateX(${dx + 0.3}ch)`;
+      t.next = now + rand(40, 70);
+    }
+
+    function rr(x: number, y: number, w: number, h: number, rad: number) {
+      ctx!.beginPath();
+      if ((ctx as any).roundRect) (ctx as any).roundRect(x, y, w, h, rad);
+      else ctx!.rect(x, y, w, h);
+    }
+
+    function drawMachine(m: Machine, now: number) {
+      const x = Math.round(m.x) - 10;
+      const y = Math.round(m.y) - 9;
+      const hot = now - m.flash < 140;
+      ctx!.fillStyle = hot ? C.attackDeep : C.frame;
+      ctx!.fillRect(x, y, 20, 14);
+      ctx!.fillStyle = hot ? C.attack : C.attackScreen;
+      ctx!.fillRect(x + 2, y + 2, 16, 10);
+      ctx!.fillStyle = C.attack;
+      ctx!.fillRect(x + 4, y + 4, 2, 2);
+      ctx!.fillStyle = C.attackDeep;
+      ctx!.fillRect(x + 4, y + 8, 7, 1);
+      if (hot || Math.floor((now + m.blink) / 530) % 2 === 0) {
+        ctx!.fillStyle = C.attack;
+        ctx!.fillRect(x + 8, y + 4, 3, 2);
+      }
+      // Stand.
+      ctx!.fillStyle = C.frame;
+      ctx!.fillRect(x + 8, y + 14, 4, 2);
+      ctx!.fillRect(x + 5, y + 16, 10, 1);
+    }
+
+    function drawC2(now: number) {
+      const cmd = now - c2.cmd0 < 520;
+      const x = Math.round(c2.x) - 14;
+      const y = Math.round(c2.y) - 8;
+      // Antenna.
+      ctx!.strokeStyle = cmd ? C.attack : C.frame;
+      ctx!.lineWidth = 1;
+      ctx!.beginPath();
+      ctx!.moveTo(x + 14, y); ctx!.lineTo(x + 14, y - 6);
+      ctx!.stroke();
+      ctx!.fillStyle = cmd ? C.attack : C.attackDeep;
+      ctx!.fillRect(x + 13, y - 8, 3, 3);
+      // Body: a small rack.
+      ctx!.fillStyle = cmd ? C.attackDeep : C.frame;
+      ctx!.fillRect(x, y, 28, 16);
+      ctx!.fillStyle = cmd ? C.attack : C.attackScreen;
+      ctx!.fillRect(x + 2, y + 2, 24, 12);
+      ctx!.fillStyle = C.attackDeep;
+      for (let i = 0; i < 3; i++) ctx!.fillRect(x + 4, y + 4 + i * 3, 12, 1);
+      ctx!.fillStyle = cmd ? C.attack : C.dim;
+      ctx!.fillRect(x + 20, y + 4, 3, 3);
+      ctx!.fillStyle = cmd ? C.attack : C.dim;
+      ctx!.fillRect(x + 20, y + 9, 3, 3);
+    }
+
+    function draw(now: number) {
+      ctx!.clearRect(0, 0, W, H);
+      for (const m of machines) drawMachine(m, now);
+      drawC2(now);
+
+      // The command unit signalling every machine.
+      if (now - c2.cmd0 < 520) {
+        ctx!.save();
+        ctx!.setLineDash([3, 5]);
+        ctx!.lineDashOffset = -((now / 30) % 8);
+        ctx!.strokeStyle = C.attack;
+        ctx!.globalAlpha = 0.45;
+        for (const m of machines) {
+          ctx!.beginPath();
+          ctx!.moveTo(c2.x, c2.y + 8);
+          ctx!.lineTo(m.x, m.y);
+          ctx!.stroke();
+        }
+        ctx!.restore();
+      }
+
+      // The firewall: a wall of fire around the word, its blocks in
+      // deep red and orange, a hot yellow line just inside, a glow and
+      // a post at each corner.
+      const bx = art.x - 14, by = art.y - 12, bw = art.w + 28, bh = art.h + 24;
+      if (shieldUp(now)) {
+        const puls = 0.5 + 0.2 * Math.sin(now / 130);
+        // The heat held inside the wall.
+        ctx!.globalAlpha = 0.06 + 0.04 * Math.sin(now / 130);
+        ctx!.fillStyle = C.fire;
+        rr(bx, by, bw, bh, 9);
+        ctx!.fill();
+        // The wall itself: a heavy stroke broken into blocks, with a glow.
+        ctx!.globalAlpha = puls;
+        ctx!.strokeStyle = C.fire;
+        ctx!.lineWidth = 3;
+        ctx!.setLineDash([9, 4]);
+        ctx!.lineDashOffset = -((now / 60) % 13);
+        ctx!.shadowColor = C.fire;
+        ctx!.shadowBlur = 9;
+        rr(bx, by, bw, bh, 9);
+        ctx!.stroke();
+        ctx!.shadowBlur = 0;
+        // A hot line just inside it.
+        ctx!.globalAlpha = Math.min(1, puls + 0.2);
+        ctx!.strokeStyle = C.fireHot;
+        ctx!.lineWidth = 1;
+        ctx!.setLineDash([]);
+        rr(bx + 3, by + 3, bw - 6, bh - 6, 6);
+        ctx!.stroke();
+        // Corner posts.
+        ctx!.globalAlpha = 1;
+        ctx!.fillStyle = C.fireDeep;
+        for (const [px, py] of [[bx, by], [bx + bw, by], [bx, by + bh], [bx + bw, by + bh]] as const) {
+          ctx!.fillRect(px - 2, py - 2, 4, 4);
+        }
+      }
+
+      for (const p of packets) {
+        const t = (now - p.t0) / p.dur;
+        if (t < 0) continue;
+        for (let k = 5; k >= 1; k--) {
+          const tt = t - k * 0.035;
+          if (tt < 0) continue;
+          const q = at(p, tt);
+          ctx!.globalAlpha = 0.5 * (1 - k / 6);
+          ctx!.fillStyle = C.attackDeep;
+          ctx!.fillRect(q.x - 1, q.y - 1, 2, 2);
+        }
+        const q = at(p, Math.min(t, 1));
+        ctx!.globalAlpha = 0.25;
+        ctx!.fillStyle = C.attack;
+        ctx!.fillRect(q.x - 3, q.y - 3, 6, 6);
+        ctx!.globalAlpha = 1;
+        ctx!.fillRect(q.x - 1.5, q.y - 1.5, 3, 3);
+      }
+
+      for (const s of sparks) {
+        const age = (now - s.t0) / 1000;
+        ctx!.globalAlpha = Math.max(0, 1 - (now - s.t0) / s.life);
+        ctx!.fillStyle = s.color;
+        ctx!.fillRect(s.x + s.vx * age - 1, s.y + s.vy * age - 1, 2, 2);
+      }
+      ctx!.globalAlpha = 1;
+
+      // Packets burning up on the wall of fire.
+      for (const s of ripples) {
+        const k = (now - s.t0) / 300;
+        ctx!.globalAlpha = (1 - k) * 0.7;
+        ctx!.strokeStyle = C.fireHot;
+        ctx!.lineWidth = 1;
+        ctx!.beginPath();
+        ctx!.arc(s.x, s.y, 3 + k * 11, 0, Math.PI * 2);
+        ctx!.stroke();
+      }
+      ctx!.globalAlpha = 1;
+    }
+
+    function shieldUp(now: number) {
+      return shield.hover || now < shield.autoUntil;
+    }
+
+    function frame(now: number) {
+      // Back from a hidden tab: carry on from where it stopped instead
+      // of delivering every packet that fell due in the meantime.
+      const gap = now - last;
+      if (gap > 250) {
+        const shift = gap - 16;
+        machines.forEach((m) => (m.next += shift));
+        packets.forEach((p) => (p.t0 += shift));
+        c2.next += shift;
+        c2.fireAt += shift;
+        shield.next += shift;
+        if (shield.autoUntil > -1e8) shield.autoUntil += shift;
+      }
+      last = now;
+
+      for (const m of machines) if (now >= m.next) fire(m, now);
+
+      // The C2 unit: signal, then a coordinated volley.
+      if (machines.length >= 2 && now >= c2.next) {
+        c2.cmd0 = now;
+        c2.fireAt = now + 560;
+        c2.applied = false;
+        c2.next = now + rand(9000, 16000);
+      }
+      if (!c2.applied && now >= c2.fireAt) {
+        for (const m of machines) fire(m, now, true);
+        c2.applied = true;
+      }
+
+      // The firewall's own schedule (hover raises it in shieldUp()).
+      if (now >= shield.next) {
+        shield.autoUntil = now + rand(900, 1700);
+        shield.next = now + rand(4000, 9000);
+      }
+      const guard = shieldUp(now);
+      const bx = art.x - 14, by = art.y - 12, bw = art.w + 28, bh = art.h + 24;
+
+      packets = packets.filter((p) => {
+        const t = (now - p.t0) / p.dur;
+        if (t >= 0 && guard) {
+          const q = at(p, Math.min(t, 1));
+          if (q.x > bx && q.x < bx + bw && q.y > by && q.y < by + bh) { blockPacket(q.x, q.y, now); return false; }
+        }
+        if (now - p.t0 < p.dur) return true;
+        hit(p, now);
+        return false;
+      });
+      sparks = sparks.filter((s) => now - s.t0 < s.life);
+      ripples = ripples.filter((s) => now - s.t0 < 300);
+      tears = tears.filter((t) => {
+        if (now >= t.until) { t.el.remove(); return false; }
+        if (now >= t.next) jitter(t, now);
+        return true;
+      });
+
+      draw(now);
+      raf = requestAnimationFrame(frame);
+    }
+
+    const onEnter = () => (shield.hover = true);
+    const onLeave = () => (shield.hover = false);
+
+    const ro = new ResizeObserver(layout);
+    ro.observe(canvas);
+    ro.observe(logo);
+    // The art is measured in characters, so measure after the face is in.
+    document.fonts.ready.then(layout);
+    if (!still) {
+      wrap.addEventListener('pointerenter', onEnter);
+      wrap.addEventListener('pointerleave', onLeave);
+      raf = requestAnimationFrame(frame);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      wrap.removeEventListener('pointerenter', onEnter);
+      wrap.removeEventListener('pointerleave', onLeave);
+      tears.forEach((t) => t.el.remove());
+      wrap.classList.remove('is-flooded');
+    };
+  }
+
+  // Pages are swapped in place (Base.astro), so this starts on every
+  // arrival at the landing page and stops before leaving it.
+  document.addEventListener('astro:page-load', () => {
+    const canvas = document.querySelector<HTMLCanvasElement>('canvas.botnet');
+    if (!canvas) return;
+    const stop = start(canvas);
+    document.addEventListener('astro:before-swap', stop, { once: true });
+  });
+</script>

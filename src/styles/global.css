@@ -148,14 +148,19 @@ main.is-cover .hero { padding-top: 0; }
 
 .logo-wrap { position: relative; display: inline-block; }
 
-.logo {
-  position: relative;
+.logo,
+.logo-tear pre {
   margin: 0;
   font-family: var(--face-mono);
   font-size: clamp(0.55rem, 3.4vw, 1.05rem);
   font-weight: 700;
   line-height: 1.12;
   white-space: pre;
+  text-align: left;
+}
+
+.logo {
+  position: relative;
   color: var(--accent);
   text-shadow: 0 0 22px var(--accent-glow);
   animation: flicker 7s infinite steps(1);
@@ -213,6 +218,47 @@ main.is-cover .hero { padding-top: 0; }
   45.5%      { opacity: 0.8; }
   46.5%, 100%{ opacity: 1; }
 }
+
+/* The landing page's botnet (components/Botnet.astro). The canvas
+   covers the hero; the padding is the room the machines stand in,
+   beside the word on a wide screen and above and below it on a phone. */
+/* Taller than the wordmark needs, so the dotted world map behind it
+   has room to read as continents rather than a strip. */
+main .hero.hero-botnet { position: relative; padding-block: clamp(5.5rem, 17vh, 10rem); }
+@media (max-width: 40rem) {
+  main .hero.hero-botnet { padding-block: clamp(5rem, 16vh, 9rem); }
+}
+/* Two canvases stacked around the word: the map behind it, the
+   machines and packets in front. */
+.botnet-map,
+.botnet {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.botnet-map { z-index: 0; }
+.hero-botnet .logo-wrap { z-index: 1; }
+.botnet { z-index: 2; }
+
+/* A hit. A copy of the art, clipped by the script to the few cells the
+   packet landed on; its ground hides the letters under it, so what
+   shows is the scrambled, shoved copy with a split on either side. */
+.logo-tear {
+  position: absolute;
+  inset: 0;
+  background: var(--canvas);
+  pointer-events: none;
+}
+.logo-tear pre { position: absolute; top: 0; left: 0; }
+.logo-tear-text { color: var(--accent); text-shadow: 0 0 22px var(--accent-glow); }
+.logo-tear-ghost { mix-blend-mode: screen; opacity: 0.8; }
+.logo-tear-ghost.is-a { color: var(--glitch-a); }
+.logo-tear-ghost.is-b { color: var(--glitch-b); }
+
+/* Four hits inside the same moment and the whole word jolts. */
+.logo-wrap.is-flooded { transform: translate(1px, -1px) skewX(-2deg); }
 
 
 /* ============================================================

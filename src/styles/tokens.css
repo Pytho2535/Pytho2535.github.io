@@ -40,6 +40,19 @@
   --glitch-a: #1FD8FF;
   --glitch-b: #FF3D9A;
 
+  /* The landing-page attack scene (components/Botnet.astro), drawn
+     deliberately off the green palette so its three parts read apart:
+     a steel-blue world map, amber attacking machines, and the green
+     wordmark as the target they fire on. Used nowhere else. */
+  --map: #3C5A82;
+  --attack: #FFA23A;
+  --attack-deep: #D9791F;
+  --attack-screen: #2A1C0C;
+  /* The firewall around the wordmark: a wall of fire. */
+  --fire: #FF5A2C;
+  --fire-deep: #C42D12;
+  --fire-hot: #FFC24A;
+
   /* --- type --- */
   --face-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --face-text: 'Instrument Sans', system-ui, sans-serif;
