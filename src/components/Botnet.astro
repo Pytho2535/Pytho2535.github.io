@@ -4,13 +4,10 @@
    Layers, from the letters up:
      .logo         the green ASCII art (CSS glitch, unchanged).
      .logo-tear    a short-lived scramble at the point of impact.
-     canvas        the machines, the packets, the sparks, the shield.
+     canvas        the machines, the packets and the sparks.
 
-   Two things happen on it:
-     - A C2 unit at the top now and then signals every machine, and a
-       beat later they all fire at once.
-     - A firewall of fire can come up around the word; packets break on
-       it instead of landing. Hovering the word raises it by hand.
+   A C2 unit at the top now and then signals every machine, and a beat
+   later they all fire a coordinated volley at the word.
 
    Under prefers-reduced-motion the machines are drawn once and
    nothing is sent. */
@@ -31,7 +28,6 @@
     el: HTMLDivElement; text: HTMLPreElement; ghostA: HTMLPreElement; ghostB: HTMLPreElement;
     r0: number; rows: number; c0: number; span: number; until: number; next: number;
   };
-  type Ripple = { x: number; y: number; t0: number };
 
   const NOISE = '#$%&@!?/\\|<>*+=~^01';
   const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -113,7 +109,6 @@
       a: tok('--glitch-a'), b: tok('--glitch-b'),
       frame: tok('--rule-strong'), screen: tok('--code-bg'), dim: tok('--ink-dim'),
       map: tok('--map'), attack: tok('--attack'), attackDeep: tok('--attack-deep'), attackScreen: tok('--attack-screen'),
-      fire: tok('--fire'), fireDeep: tok('--fire-deep'), fireHot: tok('--fire-hot'),
     };
 
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -129,14 +124,12 @@
     let packets: Packet[] = [];
     let sparks: Spark[] = [];
     let tears: Tear[] = [];
-    let ripples: Ripple[] = [];
     let hits: number[] = [];
     let raf = 0;
     let last = performance.now();
 
-    // The C2 unit and the firewall.
+    // The C2 unit that coordinates the volleys.
     const c2 = { x: 0, y: 0, next: performance.now() + rand(4000, 8000), cmd0: -1e9, fireAt: 0, applied: true };
-    const shield = { hover: false, autoUntil: -1e9, next: performance.now() + rand(3000, 7000) };
 
     function drawMap() {
       if (!mctx) return;
@@ -285,12 +278,6 @@
       }
     }
 
-    function blockPacket(x: number, y: number, now: number) {
-      const toWord = Math.atan2(art.y + art.h / 2 - y, art.x + art.w / 2 - x) + Math.PI;
-      burstSparks(x, y, toWord, 1.4, 5, now, [C.fire, C.fireHot, C.fireDeep]);
-      ripples.push({ x, y, t0: now });
-    }
-
     function tear(row: number, col: number, now: number) {
       const rows = Math.random() < 0.4 ? 2 : 1;
       const r0 = Math.max(0, Math.min(rowsN - rows, row - (rows > 1 && Math.random() < 0.5 ? 1 : 0)));
@@ -333,12 +320,6 @@
       t.ghostA.style.transform = `translateX(${dx - 0.3}ch)`;
       t.ghostB.style.transform = `translateX(${dx + 0.3}ch)`;
       t.next = now + rand(40, 70);
-    }
-
-    function rr(x: number, y: number, w: number, h: number, rad: number) {
-      ctx!.beginPath();
-      if ((ctx as any).roundRect) (ctx as any).roundRect(x, y, w, h, rad);
-      else ctx!.rect(x, y, w, h);
     }
 
     function drawMachine(m: Machine, now: number) {
@@ -409,43 +390,6 @@
         ctx!.restore();
       }
 
-      // The firewall: a wall of fire around the word, its blocks in
-      // deep red and orange, a hot yellow line just inside, a glow and
-      // a post at each corner.
-      const bx = art.x - 14, by = art.y - 12, bw = art.w + 28, bh = art.h + 24;
-      if (shieldUp(now)) {
-        const puls = 0.5 + 0.2 * Math.sin(now / 130);
-        // The heat held inside the wall.
-        ctx!.globalAlpha = 0.06 + 0.04 * Math.sin(now / 130);
-        ctx!.fillStyle = C.fire;
-        rr(bx, by, bw, bh, 9);
-        ctx!.fill();
-        // The wall itself: a heavy stroke broken into blocks, with a glow.
-        ctx!.globalAlpha = puls;
-        ctx!.strokeStyle = C.fire;
-        ctx!.lineWidth = 3;
-        ctx!.setLineDash([9, 4]);
-        ctx!.lineDashOffset = -((now / 60) % 13);
-        ctx!.shadowColor = C.fire;
-        ctx!.shadowBlur = 9;
-        rr(bx, by, bw, bh, 9);
-        ctx!.stroke();
-        ctx!.shadowBlur = 0;
-        // A hot line just inside it.
-        ctx!.globalAlpha = Math.min(1, puls + 0.2);
-        ctx!.strokeStyle = C.fireHot;
-        ctx!.lineWidth = 1;
-        ctx!.setLineDash([]);
-        rr(bx + 3, by + 3, bw - 6, bh - 6, 6);
-        ctx!.stroke();
-        // Corner posts.
-        ctx!.globalAlpha = 1;
-        ctx!.fillStyle = C.fireDeep;
-        for (const [px, py] of [[bx, by], [bx + bw, by], [bx, by + bh], [bx + bw, by + bh]] as const) {
-          ctx!.fillRect(px - 2, py - 2, 4, 4);
-        }
-      }
-
       for (const p of packets) {
         const t = (now - p.t0) / p.dur;
         if (t < 0) continue;
@@ -472,22 +416,6 @@
         ctx!.fillRect(s.x + s.vx * age - 1, s.y + s.vy * age - 1, 2, 2);
       }
       ctx!.globalAlpha = 1;
-
-      // Packets burning up on the wall of fire.
-      for (const s of ripples) {
-        const k = (now - s.t0) / 300;
-        ctx!.globalAlpha = (1 - k) * 0.7;
-        ctx!.strokeStyle = C.fireHot;
-        ctx!.lineWidth = 1;
-        ctx!.beginPath();
-        ctx!.arc(s.x, s.y, 3 + k * 11, 0, Math.PI * 2);
-        ctx!.stroke();
-      }
-      ctx!.globalAlpha = 1;
-    }
-
-    function shieldUp(now: number) {
-      return shield.hover || now < shield.autoUntil;
     }
 
     function frame(now: number) {
@@ -500,8 +428,6 @@
         packets.forEach((p) => (p.t0 += shift));
         c2.next += shift;
         c2.fireAt += shift;
-        shield.next += shift;
-        if (shield.autoUntil > -1e8) shield.autoUntil += shift;
       }
       last = now;
 
@@ -519,26 +445,12 @@
         c2.applied = true;
       }
 
-      // The firewall's own schedule (hover raises it in shieldUp()).
-      if (now >= shield.next) {
-        shield.autoUntil = now + rand(900, 1700);
-        shield.next = now + rand(4000, 9000);
-      }
-      const guard = shieldUp(now);
-      const bx = art.x - 14, by = art.y - 12, bw = art.w + 28, bh = art.h + 24;
-
       packets = packets.filter((p) => {
-        const t = (now - p.t0) / p.dur;
-        if (t >= 0 && guard) {
-          const q = at(p, Math.min(t, 1));
-          if (q.x > bx && q.x < bx + bw && q.y > by && q.y < by + bh) { blockPacket(q.x, q.y, now); return false; }
-        }
         if (now - p.t0 < p.dur) return true;
         hit(p, now);
         return false;
       });
       sparks = sparks.filter((s) => now - s.t0 < s.life);
-      ripples = ripples.filter((s) => now - s.t0 < 300);
       tears = tears.filter((t) => {
         if (now >= t.until) { t.el.remove(); return false; }
         if (now >= t.next) jitter(t, now);
@@ -549,25 +461,16 @@
       raf = requestAnimationFrame(frame);
     }
 
-    const onEnter = () => (shield.hover = true);
-    const onLeave = () => (shield.hover = false);
-
     const ro = new ResizeObserver(layout);
     ro.observe(canvas);
     ro.observe(logo);
     // The art is measured in characters, so measure after the face is in.
     document.fonts.ready.then(layout);
-    if (!still) {
-      wrap.addEventListener('pointerenter', onEnter);
-      wrap.addEventListener('pointerleave', onLeave);
-      raf = requestAnimationFrame(frame);
-    }
+    if (!still) raf = requestAnimationFrame(frame);
 
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
-      wrap.removeEventListener('pointerenter', onEnter);
-      wrap.removeEventListener('pointerleave', onLeave);
       tears.forEach((t) => t.el.remove());
       wrap.classList.remove('is-flooded');
     };
