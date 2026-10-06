@@ -51,6 +51,12 @@
   /* --- type --- */
   --face-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --face-text: 'Instrument Sans', system-ui, sans-serif;
+  /* The ASCII wordmark. Block fonts are drawn from box-drawing and block
+     glyphs (█ ╗ ═) that JetBrains Mono does not carry, so they resolve to
+     a system monospace anyway. Leading with that stack (no webfont to wait
+     on) keeps the art on its grid from the first paint, with no swap-time
+     shear. */
+  --face-ascii: ui-monospace, 'Cascadia Mono', 'Menlo', Consolas, 'DejaVu Sans Mono', monospace;
 
   --size-xs: 0.75rem;
   --size-sm: 0.8125rem;

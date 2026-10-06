@@ -151,7 +151,8 @@ main.is-cover .hero { padding-top: 0; }
 .logo,
 .logo-tear pre {
   margin: 0;
-  font-family: var(--face-mono);
+  /* The tear shares this so its scrambled copy lands on the same grid. */
+  font-family: var(--face-ascii);
   font-size: clamp(0.55rem, 3.4vw, 1.05rem);
   font-weight: 700;
   line-height: 1.12;
