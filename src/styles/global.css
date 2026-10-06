@@ -113,6 +113,9 @@ main { display: block; }
 body { min-height: 100dvh; display: flex; flex-direction: column; }
 .wrap { flex: 1 0 auto; display: flex; flex-direction: column; }
 main { flex: 1 0 auto; }
+/* A margin of quiet under the content so a page does not end hard
+   against the window edge. The centred landing does not need it. */
+main:not(.is-cover) { padding-bottom: clamp(3rem, 8vh, 6rem); }
 
 /* The landing page is one screen: its content is centred in that
    remaining space. Content taller than the window simply grows past
