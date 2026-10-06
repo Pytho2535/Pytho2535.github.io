@@ -62,20 +62,27 @@ a { color: var(--accent); text-decoration: none; }
   font-weight: 700;
   color: var(--ink);
 }
-.bar-mark .sigil { color: var(--accent); margin-right: 0.6ch; font-weight: 500; }
 
 .bar-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem clamp(0.75rem, 2vw, 1.75rem);
 }
-/* The brackets are part of the link and are dimmer than the word
-   inside them, the way a shell prints them. */
-.bar-link { color: var(--ink-dim); transition: color var(--duration) var(--easing); }
-.bar-link::before { content: "[ "; color: var(--rule); }
-.bar-link::after { content: " ]"; color: var(--rule); }
-.bar-link:hover { color: var(--ink); }
-.bar-link[aria-current="page"] { color: var(--accent); }
+/* Bare words on a 2px baseline rule: accent under the current page, a
+   faint rule on hover. The space is held by a transparent border in
+   every state, so the underline appears without shifting anything. */
+.bar-link {
+  color: var(--ink-muted);
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid transparent;
+  transition: color var(--duration) var(--easing), border-color var(--duration) var(--easing);
+}
+.bar-link:hover { color: var(--ink); border-bottom-color: var(--rule-strong); }
+.bar-link[aria-current="page"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  text-shadow: 0 0 14px var(--accent-glow);
+}
 
 /* ============================================================
    COLUMN
