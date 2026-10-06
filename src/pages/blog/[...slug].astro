@@ -234,6 +234,18 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
         requestAnimationFrame(mark);
       }, { passive: true, signal });
       mark();
+
+      // Following a contents link glides to the section rather than
+      // jumping to it, unless the reader has asked for less motion. The
+      // heading settles below the sticky bar via its scroll-margin-top.
+      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      for (const t of targets) {
+        t.a.addEventListener('click', (e) => {
+          e.preventDefault();
+          t.el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+          history.pushState(null, '', t.a.hash);
+        }, { signal });
+      }
     }
 
     // Backdrop and close button always dismiss.
@@ -363,6 +375,9 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   }
   .prose h2 { margin-top: 2.2em; font-size: var(--size-lg); }
   .prose h3 { margin-top: 1.8em; font-size: var(--size-md); }
+  /* When a contents link lands here, stop below the sticky bar rather
+     than under it. Matches the 96px threshold the reading mark uses. */
+  .prose :where(h2, h3) { scroll-margin-top: 6rem; }
   /* The heading level is printed the way the Markdown source spells it. */
   .prose h2::before { content: "## "; color: var(--accent-deep); }
   .prose h3::before { content: "### "; color: var(--accent-deep); }
