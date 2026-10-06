@@ -590,24 +590,6 @@ a.row:hover .row-name { color: var(--accent); }
 }
 
 /* ============================================================
-   FOOTER
-   ============================================================ */
-
-.foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-tight);
-  margin-top: var(--space-gap);
-  padding: var(--space-step) 0;
-  border-top: 1px dashed var(--rule);
-  font-size: var(--size-xs);
-  color: var(--ink-dim);
-}
-.foot a { color: var(--ink-dim); }
-.foot a:hover { color: var(--accent); }
-
-/* ============================================================
    RESPONSIVE
    ============================================================ */
 
