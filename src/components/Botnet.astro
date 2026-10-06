@@ -40,7 +40,8 @@
     const ctx = canvas.getContext('2d');
     const mapCanvas = hero.querySelector<HTMLCanvasElement>('canvas.botnet-map');
     const mctx = mapCanvas?.getContext('2d') ?? null;
-    if (!wrap || !logo || !ctx) return () => {};
+    const noop = { stop: () => {}, arm: (_on: boolean) => {} };
+    if (!wrap || !logo || !ctx) return noop;
 
     const lines = (logo.dataset.text ?? '').split(/\r?\n/);
     const cols = Math.max(...lines.map((l) => l.length));
@@ -127,6 +128,9 @@
     let hits: number[] = [];
     let raf = 0;
     let last = performance.now();
+    // The map and the machines always stand; firing is what the switch
+    // arms. Off by default: an idle botnet, waiting for the command.
+    let armed = false;
 
     // The C2 unit that coordinates the volleys.
     const c2 = { x: 0, y: 0, next: performance.now() + rand(4000, 8000), cmd0: -1e9, fireAt: 0, applied: true };
@@ -431,18 +435,21 @@
       }
       last = now;
 
-      for (const m of machines) if (now >= m.next) fire(m, now);
+      // Nothing is sent while disarmed: the machines just sit and blink.
+      if (armed) {
+        for (const m of machines) if (now >= m.next) fire(m, now);
 
-      // The C2 unit: signal, then a coordinated volley.
-      if (machines.length >= 2 && now >= c2.next) {
-        c2.cmd0 = now;
-        c2.fireAt = now + 560;
-        c2.applied = false;
-        c2.next = now + rand(9000, 16000);
-      }
-      if (!c2.applied && now >= c2.fireAt) {
-        for (const m of machines) fire(m, now, true);
-        c2.applied = true;
+        // The C2 unit: signal, then a coordinated volley.
+        if (machines.length >= 2 && now >= c2.next) {
+          c2.cmd0 = now;
+          c2.fireAt = now + 560;
+          c2.applied = false;
+          c2.next = now + rand(9000, 16000);
+        }
+        if (!c2.applied && now >= c2.fireAt) {
+          for (const m of machines) fire(m, now, true);
+          c2.applied = true;
+        }
       }
 
       packets = packets.filter((p) => {
@@ -468,20 +475,77 @@
     document.fonts.ready.then(layout);
     if (!still) raf = requestAnimationFrame(frame);
 
-    return () => {
+    // Arm or stand down. Standing down leaves the map and the machines
+    // in place and only stops the sending: pending packets, sparks and
+    // tears are cleared so nothing more lands on the word. Arming resets
+    // the timers so the flood ramps up rather than firing all at once.
+    function arm(on: boolean) {
+      if (on === armed) return;
+      armed = on;
+      const now = performance.now();
+      if (on) {
+        machines.forEach((m) => (m.next = now + rand(300, 2400)));
+        c2.next = now + rand(4000, 8000);
+        c2.cmd0 = -1e9;
+        c2.applied = true;
+      } else {
+        packets = [];
+        sparks = [];
+        tears.forEach((t) => t.el.remove());
+        tears = [];
+        hits = [];
+        wrap!.classList.remove('is-flooded');
+      }
+    }
+
+    function stop() {
       cancelAnimationFrame(raf);
       ro.disconnect();
       tears.forEach((t) => t.el.remove());
-      wrap.classList.remove('is-flooded');
-    };
+      tears = [];
+      wrap!.classList.remove('is-flooded');
+      ctx!.clearRect(0, 0, W, H);
+      mctx?.clearRect(0, 0, W, H);
+    }
+
+    return { stop, arm };
   }
 
-  // Pages are swapped in place (Base.astro), so this starts on every
-  // arrival at the landing page and stops before leaving it.
+  // Pages are swapped in place (Base.astro), so the scene starts on every
+  // arrival at the landing page and stops before leaving it. The map and
+  // machines always show; the ddos switch only arms the sending, and the
+  // choice is remembered across visits (off by default).
   document.addEventListener('astro:page-load', () => {
     const canvas = document.querySelector<HTMLCanvasElement>('canvas.botnet');
     if (!canvas) return;
-    const stop = start(canvas);
-    document.addEventListener('astro:before-swap', stop, { once: true });
+    const sw = document.querySelector<HTMLButtonElement>('[data-ddos-switch]');
+    const state = sw?.querySelector<HTMLElement>('[data-ddos-state]');
+
+    const scene = start(canvas);
+
+    const KEY = 'ddos';
+    const wanted = () => {
+      try { return localStorage.getItem(KEY) === 'on'; } catch { return false; }
+    };
+    const remember = (on: boolean) => {
+      try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch {}
+    };
+
+    function reflect(on: boolean) {
+      if (sw) sw.setAttribute('aria-pressed', String(on));
+      if (state) state.textContent = on ? 'on' : 'off';
+      scene.arm(on);
+    }
+
+    let on = wanted();
+    reflect(on);
+
+    const toggle = () => { on = !on; remember(on); reflect(on); };
+    sw?.addEventListener('click', toggle);
+
+    document.addEventListener('astro:before-swap', () => {
+      sw?.removeEventListener('click', toggle);
+      scene.stop();
+    }, { once: true });
   });
 </script>
