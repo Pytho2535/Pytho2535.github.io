@@ -114,6 +114,10 @@
   padding: clamp(6rem, 13vw, 11rem) clamp(1.25rem, 5vw, 4rem) 0;
   scroll-margin-top: 1rem;
 }
+/* Where a new planet begins (scripts/space-scene.ts), an empty stretch
+   of sky comes first: the camera flies across it, and lands as the
+   section comes in. */
+.block[data-new-world] { margin-top: 70svh; }
 .block-head {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.6fr);
@@ -423,7 +427,7 @@
 .pgp-actions { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 1.25rem; }
 .pgp-key { max-height: 17rem; overflow: auto; }
 
-/* ---- foot: the glow of a horizon under the last section ---- */
+/* ---- foot: on the horizon of the last planet ---- */
 
 .site-foot {
   position: relative;
@@ -434,19 +438,6 @@
   padding: 7rem clamp(1.25rem, 5vw, 4rem) 2rem;
   overflow: hidden;
   color: var(--ink-dim);
-}
-.site-foot-horizon {
-  position: absolute;
-  left: 50%;
-  top: 4rem;
-  z-index: -1;
-  width: 160vw;
-  height: 160vw;
-  border-radius: 50%;
-  transform: translateX(-50%);
-  border-top: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
-  background: radial-gradient(circle at 50% 0, color-mix(in srgb, var(--accent) 16%, transparent), transparent 22%);
-  box-shadow: 0 -20px 80px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .site-foot a { color: var(--ink); font-family: var(--face-display); font-size: 2rem; }
 .site-foot a span, .site-foot a i { color: var(--accent); font-style: normal; }
