@@ -13,15 +13,12 @@ import { url } from '../lib/url';
   description="That address is not on this site."
 >
   <section class="section nf" aria-labelledby="nf-head">
-    <h2 class="head" id="nf-head">404</h2>
-    <div class="rule"></div>
-
-    <p class="nf-line">no such file or directory</p>
-    <p class="nf-note">
+    <h1 class="nf-code" id="nf-head" data-split>404<span>.</span></h1>
+    <p class="nf-note reveal">
       Nothing is published at that address. Either it never was, or the file
       behind it was renamed
     </p>
 
-    <a class="row-more" href={url('/')}>&#8592; back to the front page</a>
+    <a class="btn btn-ghost" href={url('/')} data-magnetic>&#8592; back to the front page</a>
   </section>
 </Base>

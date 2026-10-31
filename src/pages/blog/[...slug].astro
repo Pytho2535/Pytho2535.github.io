@@ -26,15 +26,15 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 <Base title={post.data.title} description={post.data.excerpt}>
   <article class="section">
     <header class="post-head">
-      <div class="post-meta">
+      <div class="post-meta" data-arrive>
         <time datetime={iso(post.data.date)}>{iso(post.data.date)}</time>
         <span class="row-tag">{post.data.tag}</span>
       </div>
-      <h1 class="post-title" transition:name={`post-${post.id}`}>{post.data.title}</h1>
-      <p class="post-lede">{post.data.excerpt}</p>
+      <h1 class="post-title" data-carry>{post.data.title}<span>.</span></h1>
+      <p class="post-lede" data-arrive>{post.data.excerpt}</p>
     </header>
 
-    <div class="post-layout">
+    <div class="post-layout" data-arrive>
       {toc.length > 1 && (
         <details class="toc" open>
           <summary class="toc-open">contents</summary>
@@ -54,16 +54,16 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
         <Content />
       </div>
     </div>
-  </article>
 
-  <a class="row-more" href={url('/blog')}>&#8592; back to writeups</a>
+    <a class="row-more post-back" data-arrive href={url('/#writeups')} data-magnetic="0.2">&#8592; back to writeups</a>
+  </article>
 
   {/*
     Click any image in a post to open it here. Wide terminal screenshots shrink a
     lot to fit a phone screen, so a second click switches to 1:1 and scrolls.
   */}
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image preview" hidden>
-    <div class="lightbox-scroll" id="lightbox-scroll">
+    <div class="lightbox-scroll" id="lightbox-scroll" data-lenis-prevent>
       <img class="lightbox-img" id="lightbox-img" src="" alt="" />
     </div>
     <button class="lightbox-close" type="button" aria-label="Close image preview">&times;</button>
@@ -71,6 +71,8 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 </Base>
 
 <script>
+  import { getLenis, scrollToTarget } from '../../scripts/motion';
+
   // Pages are swapped in place (see Base.astro), so this runs on every
   // arrival at a writeup rather than once. Everything it hangs on the
   // document is dropped again before the next page replaces this one.
@@ -110,6 +112,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       scroller.scrollTop = 0;
       scroller.scrollLeft = 0;
       document.body.style.overflow = 'hidden';
+      getLenis()?.stop();
       closeBtn.focus();
       if (boxImg.complete) refreshZoomAffordance();
     }
@@ -120,6 +123,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       if (box!.hidden || box!.classList.contains('is-closing')) return;
       box!.classList.add('is-closing');
       document.body.style.overflow = '';
+      getLenis()?.start();
       lastFocused?.focus();
       closing = window.setTimeout(() => {
         box!.hidden = true;
@@ -236,13 +240,11 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       mark();
 
       // Following a contents link glides to the section rather than
-      // jumping to it, unless the reader has asked for less motion. The
-      // heading settles below the sticky bar via its scroll-margin-top.
-      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      // jumping to it, unless the reader has asked for less motion.
       for (const t of targets) {
         t.a.addEventListener('click', (e) => {
           e.preventDefault();
-          t.el.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+          scrollToTarget(t.el);
           history.pushState(null, '', t.a.hash);
         }, { signal });
       }
@@ -255,7 +257,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     }, { signal });
 
     // Leaving with the viewer open would carry the scroll lock over.
-    signal.addEventListener('abort', () => { document.body.style.overflow = ''; });
+    signal.addEventListener('abort', () => { document.body.style.overflow = ''; getLenis()?.start(); });
   });
 </script>
 
@@ -267,18 +269,21 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     display: flex;
     align-items: center;
     gap: var(--space-tight);
+    font-family: var(--face-mono);
     font-size: var(--size-xs);
     color: var(--ink-dim);
   }
   .post-title {
-    margin: var(--space-tight) 0 0;
-    font-family: var(--face-mono);
-    font-size: var(--size-xl);
-    font-weight: 700;
-    line-height: var(--leading-tight);
+    margin: 1.25rem 0 0;
+    font-family: var(--face-display);
+    font-size: clamp(4rem, 11vw, 9rem);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
     color: var(--ink);
   }
-  .post-title::before { content: "# "; color: var(--accent); }
+  .post-title span { color: var(--accent); }
+  .post-back { margin-top: clamp(3rem, 8vw, 5rem); padding-bottom: clamp(3rem, 8vh, 6rem); }
   .post-lede {
     margin: var(--space-tight) 0 0;
     max-width: var(--measure-note);
@@ -302,12 +307,15 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .toc {
     margin-top: var(--space-step);
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
-    background: var(--surface);
-    padding: var(--space-tight);
+    border-radius: 16px;
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: var(--space-tight) 1rem;
   }
   .toc-open {
     cursor: pointer;
+    font-family: var(--face-mono);
     font-size: var(--size-xs);
     letter-spacing: 0.16em;
     text-transform: uppercase;
@@ -329,7 +337,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .toc-item a { color: var(--ink-muted); }
   .toc-item a:hover { color: var(--accent); }
   .toc-d3 { padding-left: 1.2ch; font-size: var(--size-xs); }
-  .toc-d3 a::before { content: "©4 "; color: var(--rule-strong); }
+  .toc-d3 a::before { content: "– "; color: var(--rule-strong); }
   /* The section being read, marked as the page scrolls. */
   .toc-item.is-here > a { color: var(--accent); }
 
@@ -340,7 +348,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       grid-column: 2;
       grid-row: 1;
       position: sticky;
-      top: 5.5rem;
+      top: 6.5rem;
       align-self: start;
       max-height: calc(100vh - 8rem);
       overflow-y: auto;
@@ -353,9 +361,15 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     .toc-open { display: none; }
   }
 
-  /* The interface is monospaced; a writeup that runs to several hundred
-     lines is not. The sans starts here and stops at the end of the post. */
+  /* The writeup itself sits on a dark panel, so the stars behind it
+     never run under a line of text. */
   .prose {
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+    border: 1px solid var(--rule-soft);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--canvas) 82%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     margin-top: var(--space-step);
     max-width: var(--measure-prose);
     font-family: var(--face-text);
@@ -368,19 +382,21 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
   .prose > pre, .prose > table, .prose > p:has(> img) { max-width: min(100%, 76rem); }
 
   .prose h2, .prose h3 {
-    font-family: var(--face-mono);
-    font-weight: 700;
+    font-weight: 400;
     line-height: var(--leading-tight);
     color: var(--ink);
   }
-  .prose h2 { margin-top: 2.2em; font-size: var(--size-lg); }
-  .prose h3 { margin-top: 1.8em; font-size: var(--size-md); }
+  .prose h2 {
+    margin-top: 2em;
+    font-family: var(--face-display);
+    font-size: clamp(2rem, 3.5vw, 2.6rem);
+    letter-spacing: -0.01em;
+  }
+  .prose h3 { margin-top: 1.8em; font-size: var(--size-xl); font-weight: 600; }
   /* When a contents link lands here, stop below the sticky bar rather
      than under it. Matches the 96px threshold the reading mark uses. */
   .prose :where(h2, h3) { scroll-margin-top: 6rem; }
-  /* The heading level is printed the way the Markdown source spells it. */
-  .prose h2::before { content: "## "; color: var(--accent-deep); }
-  .prose h3::before { content: "### "; color: var(--accent-deep); }
+  .prose h2::after { content: "."; color: var(--accent); }
 
   .prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
   .prose strong { color: var(--ink); font-weight: 600; }
@@ -404,9 +420,9 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     border-radius: var(--radius-sm);
   }
   .prose pre {
-    padding: 1rem;
+    padding: 1rem 1.2rem;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: 12px;
     background: var(--code-bg);
     overflow-x: auto;
     font-family: var(--face-mono);
@@ -446,7 +462,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
     max-width: 100%;
     height: auto;
     border: 1px solid var(--rule);
-    border-radius: var(--radius);
+    border-radius: 12px;
     cursor: zoom-in;
   }
 

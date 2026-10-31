@@ -4,30 +4,31 @@
    The only file on the site that holds a colour literal or a font
    family. Everything else names a token from here.
 
-   Palette: black terminal with a faint violet cast, dim grey text,
-   and one mint-green signal. Green marks what can be acted on: the
-   prompt, a section name, a link. Grey is everything the terminal
-   printed back.
+   Palette: deep space with a faint blue cast, pale ink, and one mint
+   green. Green marks what can be acted on and what is lit: a link,
+   the planet, the cursor. The nebula tones exist only inside the
+   background gradients.
    ============================================================ */
 
 @import './fonts.css';
 
 :root {
   /* --- ground and ink --- */
-  --canvas: #0B0B0F;
-  --surface: #14131A;
-  --surface-2: #191821;
-  --rule: #1E1D26;
-  --rule-soft: #17161d;
+  --canvas: #05070d;
+  --surface: #0b0f17;
+  --surface-2: #111725;
+  --rule: #1c2433;
+  --rule-soft: #141a26;
   /* One step up from the hairline, for an outline that has to be seen
      rather than felt: the dashed slot of a certificate not yet held. */
-  --rule-strong: #2E2D38;
-  --code-bg: #08080C;
-  --overlay: rgba(5, 5, 8, 0.94);
+  --rule-strong: #2c3647;
+  --code-bg: #04060b;
+  --overlay: rgba(3, 5, 10, 0.94);
+  --glass: rgba(11, 15, 23, 0.62);
 
-  --ink: #DBDADF;
-  --ink-muted: #8A8A93;
-  --ink-dim: #66666D;
+  --ink: #eef2f0;
+  --ink-muted: #a7b0b8;
+  --ink-dim: #69737f;
 
   /* --- colour --- */
   --accent: #2BE39B;
@@ -35,28 +36,21 @@
   --accent-quiet: #0F2A20;
   --accent-glow: rgba(43, 227, 155, 0.35);
 
-  /* The chromatic split of the glitch. These two are drawn only by
-     the wordmark's two ghost layers and nowhere else on the site. */
-  --glitch-a: #1FD8FF;
-  --glitch-b: #FF3D9A;
-
-  /* The landing-page attack scene (components/Botnet.astro): a steel-blue
-     world map, green attacking machines and their packets, firing on the
-     green wordmark. Used nowhere else. */
-  --map: #3C5A82;
-  --attack: #2BE39B;
-  --attack-deep: #11B97A;
-  --attack-screen: #0F2A20;
+  /* The nebula behind the stars, drawn only by background gradients. */
+  --nebula-a: #0c3b3a;
+  --nebula-b: #13244a;
+  /* The small planets on the profile cards, one per platform. */
+  --planet-teal: #4fd1d9;
+  --planet-teal-deep: #1b5f7a;
+  --planet-blue: #8aa4ff;
+  --planet-blue-deep: #2b3a8a;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --sheen: rgba(255, 255, 255, 0.12);
 
   /* --- type --- */
   --face-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --face-text: 'Instrument Sans', system-ui, sans-serif;
-  /* The ASCII wordmark. Block fonts are drawn from box-drawing and block
-     glyphs (█ ╗ ═) that JetBrains Mono does not carry, so they resolve to
-     a system monospace anyway. Leading with that stack (no webfont to wait
-     on) keeps the art on its grid from the first paint, with no swap-time
-     shear. */
-  --face-ascii: ui-monospace, 'Cascadia Mono', 'Menlo', Consolas, 'DejaVu Sans Mono', monospace;
+  --face-display: 'Instrument Serif', Georgia, serif;
 
   --size-xs: 0.75rem;
   --size-sm: 0.8125rem;
@@ -98,7 +92,7 @@ body {
   margin: 0;
   background: var(--canvas);
   color: var(--ink-muted);
-  font-family: var(--face-mono);
+  font-family: var(--face-text);
   font-size: var(--size-base);
   line-height: var(--leading-text);
   -webkit-font-smoothing: antialiased;

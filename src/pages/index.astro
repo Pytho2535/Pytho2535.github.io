@@ -1,51 +1,148 @@
 ---
 import Base from '../layouts/Base.astro';
-import Logo from '../components/Logo.astro';
-import Botnet from '../components/Botnet.astro';
+import { getCollection } from 'astro:content';
 import { url } from '../lib/url';
+import { email, profiles, certs, handles } from '../lib/site';
+import { pgpKey, pgpFacts } from '../lib/pgp';
 
-/* The landing page is the wordmark and the three ways into the site.
-   Nothing else: the writeups have their own index one click away. */
-
-const sections = [
-  {
-    name: 'writeups',
-    href: '/blog',
-    note: 'Hack The Box machine writeups',
-  },
-  {
-    name: 'wall-of-fame',
-    href: '/wall',
-    note: 'Certificates and achievements',
-  },
-  {
-    name: 'contact',
-    href: '/contact',
-    note: 'Everything you need to reach out to me',
-  },
-];
+const posts = (await getCollection('writeups', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const iso = (date: Date) => date.toISOString().slice(0, 10);
+/* The first screenshot in a writeup is the one that trails the pointer
+   along the list. */
+const firstShot = (body = '') => {
+  const found = body.match(/!\[[^\]]*\]\(([^)\s]+)/);
+  return found ? url(found[1]) : undefined;
+};
+const keyUrl = url('/pgp.asc');
+const importCmd = `curl -s ${new URL(keyUrl, Astro.site)} | gpg --import`;
+const pad = (n: number) => String(n).padStart(2, '0');
+/* The newest few are listed; the rest unfold under a button. */
+const SHOWN = 5;
 ---
 
-<Base cover>
-  <section class="hero hero-centred hero-botnet">
-    <button type="button" class="ddos-switch" data-ddos-switch aria-pressed="false">
-      <span class="ddos-switch-label">ddos</span><span class="ddos-switch-sep">:</span><span class="ddos-switch-state" data-ddos-state>off</span>
-    </button>
-    <Logo />
-    <Botnet />
+<Base title="Pytho — Security Research & Writeups" description="Pytho — security researcher and bug bounty hunter. Hack The Box writeups, profiles, certificates and contact.">
+  <div class="work-preview" aria-hidden="true" data-preview><img alt="" /></div>
+
+  <section class="hero" id="top" aria-labelledby="hero-title" data-planet>
+    <div class="hero-inner">
+      <h1 id="hero-title" class="hero-title" data-hero-title data-hero-in>Pytho<span>.</span></h1>
+      <p class="hero-lede" data-hero-in data-hero-fade>Security research and bug bounty.<br />This is where I keep my Hack The Box writeups.</p>
+      <div class="hero-actions" data-hero-in data-hero-fade>
+        <a class="btn btn-primary" href="#writeups" data-magnetic>Read the writeups <span aria-hidden="true">↘</span></a>
+        <a class="btn btn-ghost" href="#contact" data-magnetic>Contact <span aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+    <a class="hero-cue mono" href="#about" aria-label="Scroll to about"><span>scroll</span><i aria-hidden="true"></i></a>
   </section>
 
-  <div class="rule"></div>
+  <section class="block" id="about" aria-labelledby="about-title" data-spy>
+    <div class="block-head">
+      <h2 id="about-title" class="display" data-split>What lives <em>here.</em></h2>
+      <p class="block-intro reveal">I'm Pytho. I practice security research and bug bounty. Here I publish routes through Hack The Box machines and keep links to my profiles, certificates and PGP key.</p>
+    </div>
+    <div class="stats" aria-label="Site overview">
+      <div class="stat glass reveal"><span class="stat-value">{pad(posts.length)}</span><span class="stat-label mono">published writeups</span></div>
+      <div class="stat glass reveal"><span class="stat-value">{pad(profiles.length)}</span><span class="stat-label mono">platform profiles</span></div>
+      <div class="stat glass reveal"><span class="stat-value">{pad(certs.filter((cert) => cert.status === 'held').length)}</span><span class="stat-label mono">certificate held</span></div>
+    </div>
+  </section>
 
-  <section class="section" aria-label="Sections">
-    <div class="cards">
-      {sections.map((s, i) => (
-        <a class="card" href={url(s.href)} style={`--i: ${i}`}>
-          <span class="card-arrow" aria-hidden="true">&#8594;</span>
-          <h3 class="card-name">{s.name}</h3>
-          <p class="card-note">{s.note}</p>
+  <section class="block" id="certificates" aria-labelledby="certificates-title" data-spy>
+    <div class="block-head">
+      <h2 id="certificates-title" class="display" data-split>Certificates<em>.</em></h2>
+      <p class="block-intro reveal">The one I've earned, and the one I'm working towards.</p>
+    </div>
+    <div class="certificate-grid">
+      {certs.map((cert) => (
+        <figure class={`certificate-card reveal ${cert.src ? 'is-held' : 'is-progress'}`}>
+          <div class="certificate-art glass" data-tilt>
+            {cert.src
+              ? <img src={url(cert.src)} alt={`${cert.label} certificate`} width="1200" height="927" loading="lazy" />
+              : <span class="certificate-orbit" aria-hidden="true"><i></i></span>}
+          </div>
+          <figcaption><strong>{cert.label}</strong><span class="mono">{cert.status === 'held' ? 'Held / verified' : 'In progress'}</span></figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <section class="block" id="writeups" aria-labelledby="writeups-title" data-spy>
+    <div class="block-head">
+      <h2 id="writeups-title" class="display" data-split>Writeups<em>.</em></h2>
+      <p class="block-intro reveal">Full routes through Hack The Box machines. Newest first.</p>
+    </div>
+    <div class="work-list" id="work-list" data-work-list>
+      {posts.map((post, index) => (
+        <a class:list={['work-item', index < SHOWN ? 'reveal' : 'work-extra']} href={url(`/blog/${post.id}`)} data-cursor="read" data-shot={firstShot(post.body)}>
+          <span class="work-index mono">{pad(index + 1)}</span>
+          <span class="work-main">
+            <span class="work-title">{post.data.title}</span>
+            <span class="work-excerpt">{post.data.excerpt}</span>
+          </span>
+          <span class="work-meta mono"><time datetime={iso(post.data.date)}>{iso(post.data.date)}</time><span class="row-tag">{post.data.tag}</span></span>
+          <span class="work-arrow" aria-hidden="true">↗</span>
+        </a>
+      ))}
+    </div>
+    {posts.length > SHOWN && (
+      <button class="btn btn-ghost work-toggle reveal" type="button" aria-expanded="false" aria-controls="work-list" data-work-toggle data-magnetic="0.2">
+        <span data-work-label>Show all {posts.length} writeups</span><span class="work-toggle-arrow" aria-hidden="true">↓</span>
+      </button>
+    )}
+  </section>
+
+  <section class="block" id="profiles" aria-labelledby="profiles-title" data-spy>
+    <div class="block-head">
+      <h2 id="profiles-title" class="display" data-split>Elsewhere<em>.</em></h2>
+      <p class="block-intro reveal">My profiles on security platforms.</p>
+    </div>
+    <div class="profile-grid">
+      {profiles.map((profile, index) => (
+        <a class={`profile-card glass reveal planet-${index + 1}`} href={profile.href} target="_blank" rel="noopener noreferrer" data-tilt>
+          <span class="profile-planet" aria-hidden="true"><i></i></span>
+          <span class="profile-index mono">{pad(index + 1)} / platform</span>
+          <strong>{profile.name}</strong>
+          <span class="profile-foot"><span class="mono">{profile.handle}</span><span aria-hidden="true">↗</span></span>
         </a>
       ))}
     </div>
   </section>
+
+  <section class="block contact" id="contact" aria-labelledby="contact-title" data-spy>
+    <h2 id="contact-title" class="display contact-title" data-split>Send a <em>message.</em></h2>
+    <div class="contact-main reveal">
+      <a class="contact-email" href={`mailto:${email}`} data-magnetic="0.15">{email}<span aria-hidden="true">↗</span></a>
+      <button class="copy-btn" type="button" data-copy={email}>copy address</button>
+    </div>
+    <div class="contact-links reveal">{handles.map((handle) => <a href={handle.href} target="_blank" rel="noopener noreferrer" data-magnetic="0.25">{handle.kind} <span aria-hidden="true">↗</span></a>)}</div>
+    <details class="pgp-panel glass reveal">
+      <summary><span class="mono">PGP public key</span><span class="pgp-summary-right mono">Encrypted contact <span aria-hidden="true">＋</span></span></summary>
+      <div class="pgp-content">
+        <p>Encrypt anything that should not sit in a mailbox in plain text. Verify the fingerprint before trusting the key.</p>
+        <dl>
+          <div><dt>Fingerprint</dt><dd>{pgpFacts.fingerprint}</dd></div>
+          <div><dt>Algorithm</dt><dd>{pgpFacts.algorithm}</dd></div>
+          <div><dt>Valid</dt><dd>{pgpFacts.created} → {pgpFacts.expires}</dd></div>
+        </dl>
+        <pre class="keyblock">{importCmd}</pre>
+        <div class="pgp-actions">
+          <button class="copy-btn" type="button" data-copy={importCmd}>copy command</button>
+          <button class="copy-btn" type="button" data-copy={pgpKey}>copy key</button>
+          <a class="copy-btn" href={keyUrl} download="pytho.asc">download .asc</a>
+        </div>
+        <pre class="keyblock pgp-key" data-lenis-prevent>{pgpKey}</pre>
+      </div>
+    </details>
+  </section>
+
+  <footer class="site-foot">
+    <span class="site-foot-horizon" aria-hidden="true"></span>
+    <a href="#top" data-magnetic>pytho<span>.</span> <i aria-hidden="true">↑</i></a>
+    <span class="mono">Security research / writeups</span>
+    <span class="mono">© {new Date().getFullYear()} Pytho</span>
+  </footer>
 </Base>
+
+<script>import '../scripts/portfolio.ts';</script>
