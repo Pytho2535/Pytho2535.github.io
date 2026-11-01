@@ -464,7 +464,6 @@
   .hero { padding-bottom: 7rem; }
   .hero-actions .btn { flex: 1 1 100%; justify-content: center; }
   .site-foot { flex-wrap: wrap; }
-  .site-foot span.mono:nth-of-type(2) { display: none; }
   .pgp-panel { padding: 0 1.1rem; }
   .pgp-content dl > div { grid-template-columns: 1fr; gap: 0.2rem; }
   .contact-email { padding: 0.9rem 1.3rem; }
