@@ -9,12 +9,6 @@ const posts = (await getCollection('writeups', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
 );
 const iso = (date: Date) => date.toISOString().slice(0, 10);
-/* The first screenshot in a writeup is the one that trails the pointer
-   along the list. */
-const firstShot = (body = '') => {
-  const found = body.match(/!\[[^\]]*\]\(([^)\s]+)/);
-  return found ? url(found[1]) : undefined;
-};
 const keyUrl = url('/pgp.asc');
 const importCmd = `curl -s ${new URL(keyUrl, Astro.site)} | gpg --import`;
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -23,7 +17,7 @@ const SHOWN = 5;
 ---
 
 <Base title="Pytho — Security Research & Writeups" description="Pytho — security researcher and bug bounty hunter. Hack The Box writeups, profiles, certificates and contact.">
-  <div class="work-preview" aria-hidden="true" data-preview><img alt="" /></div>
+  <div class="work-preview" aria-hidden="true" inert data-preview><div class="work-preview-page" data-preview-page></div></div>
 
   <section class="hero" id="top" aria-labelledby="hero-title" data-planet>
     <div class="hero-inner">
@@ -75,7 +69,7 @@ const SHOWN = 5;
     </div>
     <div class="work-list" id="work-list" data-work-list>
       {posts.map((post, index) => (
-        <a class:list={['work-item', index < SHOWN ? 'reveal' : 'work-extra']} href={url(`/blog/${post.id}`)} data-cursor="read" data-shot={firstShot(post.body)}>
+        <a class:list={['work-item', index < SHOWN ? 'reveal' : 'work-extra']} href={url(`/blog/${post.id}`)} data-cursor="read">
           <span class="work-index mono">{pad(index + 1)}</span>
           <span class="work-main">
             <span class="work-title">{post.data.title}</span>

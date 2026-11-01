@@ -1,0 +1,164 @@
+/* ============================================================
+   pytho — a writeup's head and text.
+
+   Shared by the writeup page and the home page, where a shrunken copy
+   of each writeup scrolls by in the preview that trails the pointer.
+   ============================================================ */
+
+.post-head { margin-top: var(--space-step); }
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-tight);
+  font-family: var(--face-mono);
+  font-size: var(--size-xs);
+  color: var(--ink-dim);
+}
+.post-title {
+  margin: 1.25rem 0 0;
+  font-family: var(--face-display);
+  font-size: clamp(4rem, 11vw, 9rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.post-title span { color: var(--accent); }
+.post-back { margin-top: clamp(3rem, 8vw, 5rem); padding-bottom: clamp(3rem, 8vh, 6rem); }
+.post-lede {
+  margin: var(--space-tight) 0 0;
+  max-width: var(--measure-note);
+  font-family: var(--face-text);
+  font-size: var(--size-lg);
+  line-height: var(--leading-text);
+  color: var(--ink-muted);
+}
+
+/* The writeup itself sits on a dark panel, so the stars behind it
+   never run under a line of text. */
+.prose {
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border: 1px solid var(--rule-soft);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--canvas) 82%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  margin-top: var(--space-step);
+  max-width: var(--measure-prose);
+  font-family: var(--face-text);
+  font-size: var(--size-lg);
+  line-height: var(--leading-loose);
+  color: var(--ink-muted);
+  overflow-wrap: break-word;
+}
+.prose > * + * { margin-top: 1.1em; }
+.prose > pre, .prose > table, .prose > p:has(> img) { max-width: min(100%, 76rem); }
+
+.prose h2, .prose h3 {
+  font-weight: 400;
+  line-height: var(--leading-tight);
+  color: var(--ink);
+}
+.prose h2 {
+  margin-top: 2em;
+  font-family: var(--face-display);
+  font-size: clamp(2rem, 3.5vw, 2.6rem);
+  letter-spacing: -0.01em;
+}
+.prose h3 { margin-top: 1.8em; font-size: var(--size-xl); font-weight: 600; }
+/* When a contents link lands here, stop below the sticky bar rather
+   than under it. Matches the 96px threshold the reading mark uses. */
+.prose :where(h2, h3) { scroll-margin-top: 6rem; }
+.prose h2::after { content: "."; color: var(--accent); }
+
+.prose a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.prose strong { color: var(--ink); font-weight: 600; }
+.prose ul, .prose ol { padding-left: 1.4em; }
+.prose li + li { margin-top: 0.4em; }
+.prose li::marker { color: var(--accent-deep); }
+
+.prose blockquote {
+  margin: 0;
+  padding: 0.2em 1.2em;
+  border-left: 2px solid var(--accent-deep);
+  color: var(--ink-dim);
+}
+
+.prose code {
+  font-family: var(--face-mono);
+  font-size: 0.85em;
+  color: var(--accent);
+  background: var(--surface);
+  padding: 0.1em 0.4em;
+  border-radius: var(--radius-sm);
+}
+.prose pre {
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--code-bg);
+  overflow-x: auto;
+  font-family: var(--face-mono);
+  font-size: var(--size-sm);
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+.prose pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+/* A block of commands, and the button that copies it. */
+.code-wrap { position: relative; }
+.prose > .code-wrap { max-width: min(100%, 76rem); }
+.code-copy {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--face-mono);
+  font-size: var(--size-xs);
+  color: var(--ink-dim);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--duration) var(--easing), color var(--duration) var(--easing);
+}
+/* Shown on approach, and always once it has focus, so it is reachable
+   from the keyboard as well as from the pointer. */
+.code-wrap:hover .code-copy,
+.code-copy:focus-visible { opacity: 1; }
+.code-copy:hover { color: var(--accent); border-color: var(--accent-deep); }
+@media (hover: none) { .code-copy { opacity: 1; } }
+
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  cursor: zoom-in;
+}
+
+.prose hr { border: none; border-top: 1px dashed var(--rule); margin: 2em 0; }
+
+/* The fact table is monospaced and its cells do not wrap, so on a
+   phone it is wider than the screen. display: block lets it scroll
+   sideways by itself rather than taking the writeup with it. */
+.prose table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-family: var(--face-mono);
+  font-size: var(--size-sm);
+}
+.prose th, .prose td {
+  border: 1px solid var(--rule);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.prose th { color: var(--ink-dim); font-weight: 500; }
+/* Headerless key/value tables still emit an empty <thead> row in Markdown;
+   collapse it instead of rendering a blank band above the first row. */
+.prose thead th:empty { padding: 0; border: none; }

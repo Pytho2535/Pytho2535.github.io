@@ -80,25 +80,81 @@ function counters() {
   });
 }
 
-/* A screenshot from the writeup trails the pointer along the list. */
+/* A writeup's head and text, fetched from its own page the first time
+   it is pointed at and kept for the next. */
+const writeups = new Map<string, Promise<HTMLElement | null>>();
+function writeupCopy(href: string) {
+  let copy = writeups.get(href);
+  if (!copy) {
+    copy = fetch(href)
+      .then((response) => (response.ok ? response.text() : null))
+      .then((html) => {
+        if (!html) return null;
+        const page = new DOMParser().parseFromString(html, 'text/html');
+        const head = page.querySelector('.post-head');
+        const prose = page.querySelector('.prose');
+        if (!head || !prose) return null;
+        const holder = document.createElement('div');
+        holder.append(document.importNode(head, true), document.importNode(prose, true));
+        // Its ids and motion hooks belong to the writeup's own page.
+        holder.querySelectorAll('[id], [data-carry], [data-arrive]').forEach((el) => {
+          el.removeAttribute('id');
+          el.removeAttribute('data-carry');
+          el.removeAttribute('data-arrive');
+        });
+        return holder;
+      })
+      .catch(() => null);
+    writeups.set(href, copy);
+  }
+  return copy;
+}
+
+/* A shrunken copy of the writeup trails the pointer along the list and
+   reads itself from the top down, then starts over. */
 function previews(signal: AbortSignal) {
   const box = document.querySelector<HTMLElement>('[data-preview]');
-  const img = box?.querySelector('img');
-  if (!box || !img) return;
+  const page = box?.querySelector<HTMLElement>('[data-preview-page]');
+  if (!box || !page) return;
   const x = gsap.quickTo(box, 'x', { duration: 0.7, ease: 'power3' });
   const y = gsap.quickTo(box, 'y', { duration: 0.7, ease: 'power3' });
   const rotate = gsap.quickTo(box, 'rotation', { duration: 0.9, ease: 'power3' });
   let lastX = 0;
+  let shown = '';
+  let reading: gsap.core.Timeline | undefined;
   const show = (on: boolean) => gsap.to(box, { autoAlpha: on ? 1 : 0, scale: on ? 1 : 0.85, duration: 0.45, ease: 'power3.out', overwrite: 'auto' });
-  document.querySelectorAll<HTMLElement>('.work-item[data-shot]').forEach((row) => {
-    row.addEventListener('pointerenter', () => {
-      if (img.getAttribute('src') !== row.dataset.shot) img.src = row.dataset.shot ?? '';
-      show(true);
-    }, { signal });
-    row.addEventListener('pointerleave', () => show(false), { signal });
+
+  const read = async (href: string) => {
+    if (href === shown) { reading?.play(); return; }
+    shown = href;
+    reading?.kill();
+    page.replaceChildren();
+    const copy = await writeupCopy(href);
+    if (href !== shown || !copy) return;
+    page.replaceChildren(...copy.cloneNode(true).childNodes);
+    const scale = box.clientWidth / page.offsetWidth;
+    gsap.set(page, { scale, y: 0, autoAlpha: 1 });
+    const distance = page.offsetHeight * scale - box.clientHeight;
+    if (distance <= 0) return;
+    // An even pace, whatever the length: a long writeup takes longer.
+    reading = gsap.timeline({ repeat: -1 })
+      .to(page, { y: -distance, duration: distance / 170, ease: 'none' }, 0.9)
+      .to(page, { autoAlpha: 0, duration: 0.4 }, '+=1.2')
+      .set(page, { y: 0 })
+      .to(page, { autoAlpha: 1, duration: 0.4 });
+  };
+
+  document.querySelectorAll<HTMLAnchorElement>('.work-item').forEach((row) => {
+    row.addEventListener('pointerenter', () => { read(row.href); show(true); }, { signal });
+    row.addEventListener('pointerleave', () => { reading?.pause(); show(false); }, { signal });
   });
+  signal.addEventListener('abort', () => reading?.kill(), { once: true });
+  // The card rides beside the pointer, clear of the cursor's READ ring,
+  // and crosses to the other side where it would run off the window.
+  const gap = 64;
   window.addEventListener('pointermove', (event) => {
-    x(event.clientX);
+    const right = event.clientX + gap + box.offsetWidth < window.innerWidth - 16;
+    x(right ? event.clientX + gap : event.clientX - gap - box.offsetWidth);
     y(event.clientY);
     rotate(gsap.utils.clamp(-8, 8, (event.clientX - lastX) * 0.6));
     lastX = event.clientX;
