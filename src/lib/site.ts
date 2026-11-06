@@ -18,8 +18,9 @@ export const profiles = [
    an empty slot that says so, so the two can never be read as the same
    thing. Only the held ones are ever counted. */
 export const certs = [
-  { label: 'CompTIA Security+', src: '/images/cert-secplus.webp', status: 'held' as const },
-  { label: 'HTB CPTS', src: null, status: 'in progress' as const },
+  { label: 'CompTIA Security+', src: '/images/cert-secplus.webp', width: 484, height: 409, status: 'held' as const },
+  { label: 'HTB CPTS', src: '/images/cert-cpts.webp', width: 640, height: 640, status: 'held' as const },
+  { label: 'CRTO', src: null, width: 0, height: 0, status: 'in progress' as const },
 ];
 
 export const handles = [

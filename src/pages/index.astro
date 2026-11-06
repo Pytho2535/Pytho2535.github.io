@@ -39,21 +39,21 @@ const SHOWN = 5;
     <div class="stats" aria-label="Site overview">
       <div class="stat glass reveal"><span class="stat-value">{pad(posts.length)}</span><span class="stat-label mono">published writeups</span></div>
       <div class="stat glass reveal"><span class="stat-value">{pad(profiles.length)}</span><span class="stat-label mono">platform profiles</span></div>
-      <div class="stat glass reveal"><span class="stat-value">{pad(certs.filter((cert) => cert.status === 'held').length)}</span><span class="stat-label mono">certificate held</span></div>
+      <div class="stat glass reveal"><span class="stat-value">{pad(certs.filter((cert) => cert.status === 'held').length)}</span><span class="stat-label mono">certificates held</span></div>
     </div>
   </section>
 
   <section class="block" id="certificates" aria-labelledby="certificates-title" data-spy data-new-world>
     <div class="block-head">
       <h2 id="certificates-title" class="display" data-split>Certificates<em>.</em></h2>
-      <p class="block-intro reveal">The one I've earned, and the one I'm working towards.</p>
+      <p class="block-intro reveal">The ones I've earned, and the one I'm working towards.</p>
     </div>
     <div class="certificate-grid">
       {certs.map((cert) => (
         <figure class={`certificate-card reveal ${cert.src ? 'is-held' : 'is-progress'}`}>
           <div class="certificate-art glass" data-tilt>
             {cert.src
-              ? <img src={url(cert.src)} alt={`${cert.label} certificate`} width="1200" height="927" loading="lazy" />
+              ? <img src={url(cert.src)} alt={`${cert.label} certificate`} width={cert.width} height={cert.height} loading="lazy" />
               : <span class="certificate-orbit" aria-hidden="true"><i></i></span>}
           </div>
           <figcaption><strong>{cert.label}</strong><span class="mono">{cert.status === 'held' ? 'Held / verified' : 'In progress'}</span></figcaption>
